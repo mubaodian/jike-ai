@@ -3,7 +3,7 @@ package com.swl.jikeai.exception;
 import lombok.Getter;
 
 /**
- *  错误码枚举
+ * 错误码枚举
  */
 @Getter
 public enum ErrorCode {
