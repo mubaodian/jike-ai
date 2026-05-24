@@ -1,7 +1,7 @@
 package com.swl.jikeai.controller;
 
 import com.swl.jikeai.common.BaseResponse;
-import com.swl.jikeai.common.ResultUtils;
+import com.swl.jikeai.utils.ResultUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

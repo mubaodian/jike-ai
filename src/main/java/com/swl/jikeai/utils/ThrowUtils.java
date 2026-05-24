@@ -1,4 +1,7 @@
-package com.swl.jikeai.exception;
+package com.swl.jikeai.utils;
+
+import com.swl.jikeai.exception.BusinessException;
+import com.swl.jikeai.exception.ErrorCode;
 
 /**
  * 异常工具类

@@ -1,5 +1,6 @@
-package com.swl.jikeai.common;
+package com.swl.jikeai.utils;
 
+import com.swl.jikeai.common.BaseResponse;
 import com.swl.jikeai.exception.ErrorCode;
 
 public class ResultUtils {

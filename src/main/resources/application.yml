@@ -1,18 +1,27 @@
 spring:
-    application:
-        name: jike-ai
+  application:
+    name: jike-aix
+  config:
+    import: optional:file:.env[.properties]
+  # mysql
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/jike_ai
+    username: root
+    password: ${DB_PASSWORD}
+
 server:
-    port: 8123
-    servlet:
-        context-path: /api
+  port: 8123
+  servlet:
+    context-path: /api
 # springdoc-openapi
 springdoc:
-    group-configs:
-        - group: 'default'
-          paths-to-match: '/**'
-          packages-to-scan: com.swl.jikeai.controller
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.swl.jikeai.controller
 # knife4j
 knife4j:
-    enable: true
-    setting:
-        language: zh_cn
+  enable: true
+  setting:
+    language: zh_cn
