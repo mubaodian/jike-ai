@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import BasicLayout from '@/layouts/BasicLayout.vue'
-import { health } from '@/api/healthController'
+import { useLoginUserStore } from '@/stores/loginUser'
 
-health()
-  .then((response) => {
-    console.log('后端健康检查成功:', response)
-  })
-  .catch((error) => {
-    console.error('后端健康检查失败:', error)
-  })
+const loginUserStore = useLoginUserStore()
+// 初始化时获取登录用户信息
+loginUserStore.fetchLoginUser()
 </script>
 
 <template>

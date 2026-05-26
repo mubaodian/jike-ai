@@ -4,7 +4,7 @@ import { RouterView } from 'vue-router'
 import GlobalHeader from '@/components/GlobalHeader.vue'
 import GlobalFooter from '@/components/GlobalFooter.vue'
 
-const { Header, Content, Footer } = Layout
+const { Header, Footer } = Layout
 </script>
 
 <template>
@@ -12,9 +12,9 @@ const { Header, Content, Footer } = Layout
     <Header class="header">
       <GlobalHeader />
     </Header>
-    <Content class="content">
+    <a-layout-content class="content">
       <RouterView />
-    </Content>
+    </a-layout-content>
     <Footer class="footer">
       <GlobalFooter />
     </Footer>
@@ -38,9 +38,10 @@ const { Header, Content, Footer } = Layout
 }
 
 .content {
-  flex: 1;
   padding: 24px;
-  background: #fafafa;
+  margin: 16px auto 56px;
+  width: 100%;
+  max-width: 1200px;
 }
 
 .footer {

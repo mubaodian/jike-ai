@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Menu, Button, Space } from 'ant-design-vue'
+import { Menu, message, Space } from 'ant-design-vue'
 import type { MenuProps } from 'ant-design-vue'
+import { UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { userLogout } from '@/api/userController'
 
 const router = useRouter()
 const route = useRoute()
+const loginUserStore = useLoginUserStore()
 
 // 菜单项配置
-const menuItems = ref([
+const originItems
+ = ref([
   {
     key: 'home',
     label: '首页',
     path: '/',
   },
   {
-    key: 'about',
-    label: '关于',
-    path: '/about',
+    key: 'userManage',
+    label: '用户管理',
+    path: '/admin/userManage',
   },
 ])
 
@@ -27,7 +32,8 @@ const selectedKeys = ref<string[]>(['home'])
 // 根据路由路径更新菜单选中状态
 const updateSelectedKeys = () => {
   const currentPath = route.path
-  const menuItem = menuItems.value.find((m) => m.path === currentPath)
+  const menuItem = originItems
+  .value.find((m) => m.path === currentPath)
   if (menuItem) {
     selectedKeys.value = [menuItem.key]
   }
@@ -41,16 +47,39 @@ updateSelectedKeys()
 
 // 处理菜单点击
 const handleMenuClick: MenuProps['onClick'] = (item) => {
-  const menuItem = menuItems.value.find((m) => m.key === item.key)
+  const menuItem = originItems
+  .value.find((m) => m.key === item.key)
   if (menuItem) {
     router.push(menuItem.path)
   }
 }
 
-// 处理登录
-const handleLogin = () => {
-  console.log('跳转到登录页面')
-  // TODO: 实现登录逻辑
+// 过滤菜单项（权限校验）
+const filterMenuItems = () => {
+  return originItems.value.filter((item) => {
+    if (item.path.startsWith('/admin')) {
+      const loginUser = loginUserStore.loginUser
+      if(!loginUser?.id || loginUser.userRole !== 'admin'){
+        return false
+      }
+    }
+    return true
+  })
+}
+
+// 用户退出登录
+const doLogout = async () => {
+  const res = await userLogout()
+  if (res.data.code === 0) {
+    // 清除登录用户信息
+    loginUserStore.setLoginUser({
+      userName: '未登录',
+    })
+    message.success('退出登录成功')
+    await router.push('/user/login')
+  }else{
+    message.error('退出登录失败：' + res.data.message)
+  }
 }
 </script>
 
@@ -69,7 +98,8 @@ const handleLogin = () => {
         mode="horizontal"
         @click="handleMenuClick"
         :items="
-          menuItems.map((item) => ({
+          filterMenuItems()
+          .map((item) => ({
             key: item.key,
             label: item.label,
           }))
@@ -80,7 +110,33 @@ const handleLogin = () => {
     <!-- 右侧：用户操作 -->
     <div class="header-right">
       <Space>
-        <Button type="primary" @click="handleLogin">登录</Button>
+        <div v-if="loginUserStore.loginUser.id">
+          <a-dropdown>
+            <a-space>
+              <a-avatar
+                v-if="loginUserStore.loginUser.userAvatar"
+                :src="loginUserStore.loginUser.userAvatar"
+              ></a-avatar>
+              <a-avatar v-else>
+                <template #icon>
+                  <UserOutlined />
+                </template>
+              </a-avatar>
+              <span>{{ loginUserStore.loginUser.userName ?? '无名' }}</span>
+            </a-space>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item @click="doLogout">
+                  <LogoutOutlined />
+                  退出登录
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+        <div v-else>
+          <a-button type="primary" href="/user/login">登录</a-button>
+        </div>
       </Space>
     </div>
   </div>
@@ -110,7 +166,7 @@ const handleLogin = () => {
 .site-title {
   font-size: 18px;
   font-weight: 600;
-  color: #000;
+  color: #4096ff;
   white-space: nowrap;
 }
 
