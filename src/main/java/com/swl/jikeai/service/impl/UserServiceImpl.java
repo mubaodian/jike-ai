@@ -7,7 +7,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.swl.jikeai.exception.BusinessException;
 import com.swl.jikeai.exception.ErrorCode;
-import com.swl.jikeai.model.dto.UserQueryRequest;
+import com.swl.jikeai.model.dto.user.UserQueryRequest;
 import com.swl.jikeai.model.entity.User;
 import com.swl.jikeai.mapper.UserMapper;
 import com.swl.jikeai.model.enums.UserRoleEnum;

@@ -2,7 +2,7 @@ package com.swl.jikeai.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.swl.jikeai.model.dto.UserQueryRequest;
+import com.swl.jikeai.model.dto.user.UserQueryRequest;
 import com.swl.jikeai.model.entity.User;
 import com.swl.jikeai.model.vo.LoginUserVO;
 import com.swl.jikeai.model.vo.UserVO;

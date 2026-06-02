@@ -1,4 +1,4 @@
-package com.swl.jikeai.model.dto;
+package com.swl.jikeai.common;
 
 import lombok.Data;
 
