@@ -9,13 +9,15 @@ import com.swl.jikeai.exception.ErrorCode;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
+import static com.swl.jikeai.constant.AppConstant.CODE_OUTPUT_ROOT_DIR;
+
 /**
  * 抽象代码文件保存器 - 模板方法类
  */
 public abstract class CodeFileSaverTemplate<T> {
 
     // 文件根目录
-    protected static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    protected static final String FILE_SAVE_ROOT_DIR = CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 模板方法：保存代码的标准流程
@@ -23,11 +25,11 @@ public abstract class CodeFileSaverTemplate<T> {
      * @param codeResult 代码结果对象
      * @return 保存的目录
      */
-    public final File saveCode(T codeResult) {
+    public final File saveCode(T codeResult,Long appId) {
         // 校验输出
         validateInput(codeResult);
         // 构建唯一的目录路径
-        String baseDirPath = buildUniqueDir();
+        String baseDirPath = buildUniqueDir(appId);
         // 保存文件
         saveFiles(baseDirPath, codeResult);
         // 返回文件
@@ -51,9 +53,9 @@ public abstract class CodeFileSaverTemplate<T> {
      *
      * @return 唯一的目录路径
      */
-    protected String buildUniqueDir() {
+    protected String buildUniqueDir(Long appId) {
         String bizType = getBizType();
-        String uniqueDirName = StrUtil.format("{}_{}", bizType, IdUtil.getSnowflakeNextIdStr());
+        String uniqueDirName = StrUtil.format("{}_{}", bizType, appId);
         String dirPath = FILE_SAVE_ROOT_DIR + File.separator + uniqueDirName;
         FileUtil.mkdir(dirPath);
         return dirPath;

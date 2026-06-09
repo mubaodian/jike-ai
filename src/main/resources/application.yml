@@ -8,7 +8,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/jike_ai
     username: root
-    password: ${DB_PASSWORD}
+    password: 248268
 server:
   port: 8123
   servlet:
