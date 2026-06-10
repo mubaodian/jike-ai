@@ -33,8 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.swl.jikeai.constant.AppConstant.CODE_DEPLOY_HOST;
-import static com.swl.jikeai.constant.AppConstant.CODE_OUTPUT_ROOT_DIR;
+import static com.swl.jikeai.constant.AppConstant.*;
 
 /**
  * 应用 服务层实现。
@@ -95,7 +94,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ErrorCode.SYSTEM_ERROR,"应用代码不存在，请先生成代码");
         // 复制文件代码到部署目录
-        String deployDirPath = CODE_OUTPUT_ROOT_DIR + File.separator + deployKey;
+        String deployDirPath = CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
             FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
         } catch (IORuntimeException e) {
