@@ -20,6 +20,11 @@ const originItems
     path: '/',
   },
   {
+    key: 'appManage',
+    label: '应用管理',
+    path: '/admin/appManage',
+  },
+  {
     key: 'userManage',
     label: '用户管理',
     path: '/admin/userManage',
