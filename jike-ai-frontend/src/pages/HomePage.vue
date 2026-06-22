@@ -22,62 +22,144 @@
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
 
-    <!-- 我的应用分页列表 -->
+    <!-- 我的应用卡片列表 -->
     <div class="app-section">
       <h2>我的应用</h2>
-      <a-table
-        :columns="appColumns"
-        :data-source="myAppList"
-        :pagination="myAppPagination"
-        :loading="myAppLoading"
-        @change="handleMyAppTableChange"
-        :scroll="{ x: 800 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="goToAppDetail(record.id)">
-                编辑
-              </a-button>
-              <a-button type="link" size="small" @click="goToAppGenerate(record.id)">
-                生成
-              </a-button>
-              <a-popconfirm
-                title="删除应用"
-                description="确定要删除此应用吗？"
-                ok-text="确定"
-                cancel-text="取消"
-                @confirm="handleDeleteApp(record.id)"
-              >
-                <a-button type="link" danger size="small">删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+      <a-spin :spinning="myAppLoading">
+        <div class="app-cards-container">
+          <div v-if="myAppList.length === 0" class="empty-state">
+            <p>暂无应用，创建一个新应用开始吧</p>
+          </div>
+          <div v-else class="app-cards">
+            <div v-for="app in myAppList" :key="app.id" class="app-card">
+              <!-- 应用封面 -->
+              <div class="card-cover">
+                <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
+                <div v-else class="cover-placeholder">
+                  <span>无封面</span>
+                </div>
+                <!-- 悬停按钮覆盖层 -->
+                <div class="card-overlay">
+                  <a-space>
+                    <a-button type="primary" size="small" @click="goToAppGenerate(app.id!)">
+                      查看对话
+                    </a-button>
+                    <a-button
+                      v-if="app.deployKey"
+                      size="small"
+                      @click="openViewWorkPage(app.deployKey)"
+                    >
+                      查看作品
+                    </a-button>
+                  </a-space>
+                </div>
+              </div>
+              <!-- 卡片底部信息 -->
+              <div class="card-footer">
+                <!-- 左侧：用户头像 -->
+                <div class="user-avatar">
+                  <a-avatar v-if="app.user?.userAvatar" :src="app.user.userAvatar" :size="40" />
+                  <a-avatar v-else :size="40">
+                    {{ app.user?.userName?.charAt(0) || 'U' }}
+                  </a-avatar>
+                </div>
+                <!-- 右侧：应用信息 -->
+                <div class="app-info">
+                  <div class="app-name">{{ app.appName }}</div>
+                  <div class="user-name">{{ app.user?.userName }}</div>
+                </div>
+              </div>
+              <!-- 卡片操作 -->
+              <div class="card-actions">
+                <a-popconfirm
+                  title="删除应用"
+                  description="确定要删除此应用吗？"
+                  ok-text="确定"
+                  cancel-text="取消"
+                  @confirm="handleDeleteApp(app.id!)"
+                >
+                  <a-button type="link" danger size="small">删除</a-button>
+                </a-popconfirm>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a-spin>
+      <!-- 分页 -->
+      <div class="pagination-container" v-if="myAppList.length > 0">
+        <a-pagination
+          :current="myAppPagination.current"
+          :page-size="myAppPagination.pageSize"
+          :total="myAppPagination.total"
+          :show-quick-jumper="true"
+          :show-size-changer="false"
+          @change="handleMyAppPageChange"
+        />
+      </div>
     </div>
 
-    <!-- 精选应用分页列表 -->
+    <!-- 精选应用卡片列表 -->
     <div class="app-section">
       <h2>精选应用</h2>
-      <a-table
-        :columns="appColumns"
-        :data-source="goodAppList"
-        :pagination="goodAppPagination"
-        :loading="goodAppLoading"
-        @change="handleGoodAppTableChange"
-        :scroll="{ x: 800 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="goToAppGenerate(record.id)">
-                生成
-              </a-button>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+      <a-spin :spinning="goodAppLoading">
+        <div class="app-cards-container">
+          <div v-if="goodAppList.length === 0" class="empty-state">
+            <p>暂无精选应用</p>
+          </div>
+          <div v-else class="app-cards">
+            <div v-for="app in goodAppList" :key="app.id" class="app-card">
+              <!-- 应用封面 -->
+              <div class="card-cover">
+                <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
+                <div v-else class="cover-placeholder">
+                  <span>无封面</span>
+                </div>
+                <!-- 悬停按钮覆盖层 -->
+                <div class="card-overlay">
+                  <a-space>
+                    <a-button type="primary" size="small" @click="goToAppGenerate(app.id!)">
+                      查看对话
+                    </a-button>
+                    <a-button
+                      v-if="app.deployKey"
+                      size="small"
+                      @click="openViewWorkPage(app.deployKey)"
+                    >
+                      查看作品
+                    </a-button>
+                  </a-space>
+                </div>
+              </div>
+              <!-- 卡片底部信息 -->
+              <div class="card-footer">
+                <!-- 左侧：用户头像 -->
+                <div class="user-avatar">
+                  <a-avatar v-if="app.user?.userAvatar" :src="app.user.userAvatar" :size="40" />
+                  <a-avatar v-else :size="40">
+                    {{ app.user?.userName?.charAt(0) || 'U' }}
+                  </a-avatar>
+                </div>
+                <!-- 右侧：应用信息 -->
+                <div class="app-info">
+                  <div class="app-name">{{ app.appName }}</div>
+                  <div class="user-name">{{ app.user?.userName }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a-spin>
+      <!-- 分页 -->
+      <div class="pagination-container" v-if="goodAppList.length > 0">
+        <a-pagination
+          :current="goodAppPagination.current"
+          :page-size="goodAppPagination.pageSize"
+          :total="goodAppPagination.total"
+          :show-quick-jumper="true"
+          :show-size-changer="false"
+          @change="handleGoodAppPageChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -118,36 +200,13 @@ const goodAppPagination = reactive({
   showQuickJumper: true,
 })
 
-const appColumns = [
-  {
-    title: '应用名称',
-    dataIndex: 'appName',
-    key: 'appName',
-    width: 150,
-  },
-  {
-    title: '应用描述',
-    dataIndex: 'initPrompt',
-    key: 'initPrompt',
-    width: 250,
-    ellipsis: true,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-    key: 'createTime',
-    width: 150,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 180,
-    fixed: 'right' as const,
-  },
-]
-
 // 创建应用
 const handleCreateApp = async () => {
+  // 防止重复提交：如果已在加载中，直接返回
+  if (loading.value) {
+    return
+  }
+
   if (!prompt.value.trim()) {
     errorMessage.value = '请输入应用描述'
     return
@@ -188,6 +247,8 @@ const fetchMyAppList = async () => {
     const res = await listMyAppVoByPage({
       pageNum: myAppPagination.current,
       pageSize: myAppPagination.pageSize,
+      sortField: 'createTime',
+      sortOrder: 'desc',
     })
     if (res.data.code === 0 && res.data.data) {
       myAppList.value = res.data.data.records || []
@@ -208,6 +269,8 @@ const fetchGoodAppList = async () => {
     const res = await listGoodAppVoByPage({
       pageNum: goodAppPagination.current,
       pageSize: goodAppPagination.pageSize,
+      sortField: 'createTime',
+      sortOrder: 'desc',
     })
     if (res.data.code === 0 && res.data.data) {
       goodAppList.value = res.data.data.records || []
@@ -238,26 +301,29 @@ const handleDeleteApp = async (appId: number) => {
 }
 
 // 表格分页变化
-const handleMyAppTableChange = (pagination: any) => {
-  myAppPagination.current = pagination.current
-  myAppPagination.pageSize = pagination.pageSize
+const handleMyAppPageChange = (page: number) => {
+  myAppPagination.current = page
   fetchMyAppList()
 }
 
-const handleGoodAppTableChange = (pagination: any) => {
-  goodAppPagination.current = pagination.current
-  goodAppPagination.pageSize = pagination.pageSize
+const handleGoodAppPageChange = (page: number) => {
+  goodAppPagination.current = page
   fetchGoodAppList()
 }
 
 // 跳转到应用生成页
 const goToAppGenerate = (appId: number) => {
-  router.push(`/app/generate/${appId}`)
+  router.push(`/app/generate/${appId}?view=1`)
 }
 
 // 跳转到应用详情页
 const goToAppDetail = (appId: number) => {
   router.push(`/app/detail/${appId}`)
+}
+
+// 打开查看作品页面
+const openViewWorkPage = (deployKey: string) => {
+  window.open(`http://localhost/${deployKey}`, '_blank')
 }
 
 // 页面加载时获取列表
@@ -315,5 +381,133 @@ onMounted(() => {
 
 :deep(.ant-table) {
   border-radius: 4px;
+}
+
+.app-cards-container {
+  margin-bottom: 24px;
+}
+
+.app-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.app-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.app-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.app-card:hover .card-overlay {
+  opacity: 1;
+}
+
+.card-cover {
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  background: #f5f5f5;
+  position: relative;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  color: #999;
+  font-size: 14px;
+}
+
+.card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-footer {
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex-grow: 1;
+}
+
+.user-avatar {
+  flex-shrink: 0;
+}
+
+.app-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  margin-bottom: 4px;
+  word-break: break-word;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.user-name {
+  font-size: 12px;
+  color: #999;
+  word-break: break-word;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-actions {
+  padding: 8px 12px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
 }
 </style>

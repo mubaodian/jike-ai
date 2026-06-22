@@ -2,9 +2,30 @@
   <div id="appManagePage">
     <a-card title="应用管理">
       <!-- 搜索条件 -->
-      <a-form layout="inline" class="search-form" @finish="handleSearch">
-        <a-form-item label="应用名称">
+      <a-form layout="inline" class="search-form" :model="searchForm" @finish="handleSearch">
+        <a-form-item label="应用名称" name="appName">
           <a-input v-model:value="searchForm.appName" placeholder="请输入应用名称" />
+        </a-form-item>
+        <a-form-item label="创作者ID" name="userId">
+          <a-input
+            v-model:value="searchForm.userId"
+            placeholder="请输入创作者ID"
+            style="width: 150px"
+          />
+        </a-form-item>
+        <a-form-item label="生成类型" name="codeGenType">
+          <a-select
+            v-model:value="searchForm.codeGenType"
+            placeholder="选择生成类型"
+            allow-clear
+            style="width: 120px"
+          >
+            <a-select-option value="">全部</a-select-option>
+            <a-select-option value="html">html</a-select-option>
+            <a-select-option value="react">React</a-select-option>
+            <a-select-option value="vue">Vue</a-select-option>
+            <a-select-option value="multi_file">multi_file</a-select-option>
+          </a-select>
         </a-form-item>
         <a-form-item>
           <a-space>
@@ -21,11 +42,30 @@
         :pagination="pagination"
         :loading="loading"
         @change="handleTableChange"
-        :scroll="{ x: 1000 }"
+        :scroll="{ x: 1200 }"
         style="margin-top: 16px"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'action'">
+          <template v-if="column.key === 'cover'">
+            <div v-if="record.cover" class="cover-preview">
+              <img :src="record.cover" :alt="record.appName" />
+            </div>
+            <div v-else class="cover-placeholder">无封面</div>
+          </template>
+          <template v-else-if="column.key === 'userName'">
+            {{ record.user?.userName || '-' }}
+          </template>
+          <template v-else-if="column.key === 'codeGenType'">
+            <a-tag color="blue">{{ record.codeGenType || '-' }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'priority'">
+            <a-tag v-if="record.priority === 99" color="gold">精选</a-tag>
+            <a-tag v-else color="default">普通</a-tag>
+          </template>
+          <template v-else-if="column.key === 'createTime'">
+            {{ formatTime(record.createTime) }}
+          </template>
+          <template v-else-if="column.key === 'action'">
             <a-space>
               <a-button type="link" size="small" @click="goToAppDetail(record.id)">
                 编辑
@@ -40,13 +80,24 @@
                 <a-button type="link" danger size="small">删除</a-button>
               </a-popconfirm>
               <a-popconfirm
+                v-if="record.priority !== 99"
                 title="设置为精选"
-                :description="`确定将此应用设置为精选吗？优先级将设置为 99`"
+                description="确定将此应用设置为精选吗？"
                 ok-text="确定"
                 cancel-text="取消"
-                @confirm="handleSetFeatured(record.id, record.appName)"
+                @confirm="handleSetFeatured(record.id)"
               >
                 <a-button type="link" size="small">精选</a-button>
+              </a-popconfirm>
+              <a-popconfirm
+                v-else
+                title="取消精选"
+                description="确定取消此应用的精选状态吗？"
+                ok-text="确定"
+                cancel-text="取消"
+                @confirm="handleCancelFeatured(record.id)"
+              >
+                <a-button type="link" danger size="small" style="color: #faad14">取消精选</a-button>
               </a-popconfirm>
             </a-space>
           </template>
@@ -66,6 +117,7 @@ import {
   updateAppByAdmin,
 } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { formatTime } from '@/utils/time'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -74,6 +126,8 @@ const loading = ref(false)
 
 const searchForm = reactive({
   appName: '',
+  userId: '',
+  codeGenType: '',
 })
 
 const appList = ref<API.AppVO[]>([])
@@ -100,20 +154,32 @@ const columns = [
     width: 150,
   },
   {
+    title: '封面',
+    dataIndex: 'cover',
+    key: 'cover',
+    width: 100,
+  },
+  {
     title: '应用描述',
     dataIndex: 'initPrompt',
     key: 'initPrompt',
-    width: 250,
+    width: 200,
     ellipsis: true,
   },
   {
-    title: '创建者',
-    dataIndex: ['user', 'userName'],
+    title: '创作者',
+    dataIndex: 'userName',
     key: 'userName',
     width: 120,
   },
   {
-    title: '优先级',
+    title: '生成类型',
+    dataIndex: 'codeGenType',
+    key: 'codeGenType',
+    width: 120,
+  },
+  {
+    title: '精选状态',
     dataIndex: 'priority',
     key: 'priority',
     width: 100,
@@ -127,7 +193,7 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right' as const,
   },
 ]
@@ -148,6 +214,8 @@ const fetchAppList = async () => {
       pageNum: pagination.current,
       pageSize: pagination.pageSize,
       appName: searchForm.appName || undefined,
+      userId: searchForm.userId ? searchForm.userId as unknown as number : undefined,
+      codeGenType: searchForm.codeGenType || undefined,
     })
 
     if (res.data.code === 0 && res.data.data) {
@@ -179,7 +247,7 @@ const handleDeleteApp = async (appId: number) => {
 }
 
 // 设置为精选（优先级设置为99）
-const handleSetFeatured = async (appId: number, appName: string) => {
+const handleSetFeatured = async (appId: number) => {
   try {
     const res = await updateAppByAdmin({
       id: appId,
@@ -195,6 +263,26 @@ const handleSetFeatured = async (appId: number, appName: string) => {
   } catch (error) {
     message.error('设置精选出错')
     console.error('设置精选错误:', error)
+  }
+}
+
+// 取消精选（优先级设置为0）
+const handleCancelFeatured = async (appId: number) => {
+  try {
+    const res = await updateAppByAdmin({
+      id: appId,
+      priority: 0,
+    })
+
+    if (res.data.code === 0) {
+      message.success('已取消精选')
+      await fetchAppList()
+    } else {
+      message.error(res.data.message || '取消失败')
+    }
+  } catch (error) {
+    message.error('取消精选出错')
+    console.error('取消精选错误:', error)
   }
 }
 
@@ -214,6 +302,8 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.appName = ''
+  searchForm.userId = ''
+  searchForm.codeGenType = ''
   pagination.current = 1
   fetchAppList()
 }
@@ -232,7 +322,7 @@ onMounted(() => {
 <style scoped>
 #appManagePage {
   padding: 20px;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -242,5 +332,34 @@ onMounted(() => {
 
 :deep(.ant-card) {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.cover-preview {
+  width: 80px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  width: 80px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  color: #999;
+  font-size: 12px;
 }
 </style>

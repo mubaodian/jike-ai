@@ -54,6 +54,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getAppVoById, updateApp, updateAppByAdmin } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { formatTime } from '@/utils/time'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,11 +93,14 @@ const fetchAppInfo = async () => {
       return
     }
 
-    const res = await getAppVoById({ id: appIdStr as any })
+    const res = await getAppVoById({ id: appIdStr as unknown as number })
 
     if (res.data.code === 0 && res.data.data) {
       const app = res.data.data
       appOwnerId.value = app.userId || 0
+
+      // 检查是否是管理员
+      isAdmin.value = loginUserStore.loginUser.userRole === 'admin'
 
       // 检查权限：普通用户只能编辑自己的应用
       if (!isAdmin.value && loginUserStore.loginUser.id !== appOwnerId.value) {
@@ -105,14 +109,11 @@ const fetchAppInfo = async () => {
         return
       }
 
-      // 检查是否是管理员
-      isAdmin.value = loginUserStore.loginUser.userRole === 'admin'
-
       Object.assign(formState, {
         id: app.id?.toString() || '',
         appName: app.appName || '',
         initPrompt: app.initPrompt || '',
-        createTime: app.createTime || '',
+        createTime: formatTime(app.createTime),
         cover: app.cover || '',
         priority: app.priority || 0,
       })
@@ -133,16 +134,26 @@ const handleSubmit = async (values: any) => {
   loading.value = true
 
   try {
-    const appId = Number(formState.id)
+    const appId = formState.id as unknown as number
 
     if (isAdmin.value) {
       // 管理员可以修改名称、封面、优先级
-      const res = await updateAppByAdmin({
+      const updateData: any = {
         id: appId,
         appName: formState.appName,
-        cover: formState.cover,
-        priority: formState.priority,
-      })
+      }
+
+      // 只有当 cover 不为空时才添加
+      if (formState.cover) {
+        updateData.cover = formState.cover
+      }
+
+      // 只有当 priority 不为 undefined 和 0 时才添加
+      if (formState.priority !== undefined && formState.priority !== 0) {
+        updateData.priority = formState.priority
+      }
+
+      const res = await updateAppByAdmin(updateData)
 
       if (res.data.code === 0) {
         message.success('应用信息修改成功')

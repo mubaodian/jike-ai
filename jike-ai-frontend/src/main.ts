@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import Antd from 'ant-design-vue'
+import 'highlight.js/styles/github-dark.css'
 
 import App from './App.vue'
 import router from './router'
