@@ -60,7 +60,7 @@
             <a-input-group compact>
               <a-input
                 v-model:value="userMessage"
-                placeholder="输入您的需求..."
+                placeholder="请描述你想生成的网站，越详细效果越好哦"
                 allow-clear
                 disabled
               />
@@ -72,7 +72,7 @@
           <a-input-group v-else compact>
             <a-input
               v-model:value="userMessage"
-              placeholder="输入您的需求..."
+              placeholder="请描述你想生成的网站，越详细效果越好哦"
               allow-clear
               @keyup.enter="handleSendMessage"
             />
@@ -472,7 +472,7 @@ const goToEditPage = () => {
 // 删除应用
 const handleDeleteApp = async () => {
   try {
-    const res = await deleteApp({ id: Number(appId.value) })
+    const res = await deleteApp({ id: appId.value as unknown as number })
     if (res.data.code === 0) {
       antMessage.success('应用删除成功')
       showAppDetailDrawer.value = false
@@ -508,14 +508,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .app-name {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #000;
 }
@@ -524,14 +524,14 @@ onMounted(() => {
   display: flex;
   flex: 1;
   overflow: hidden;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 12px 16px;
 }
 
 .chat-section {
   display: flex;
   flex-direction: column;
-  width: 50%;
+  width: 40%;
   background: #fff;
   border-radius: 4px;
   overflow: hidden;
@@ -541,16 +541,16 @@ onMounted(() => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .message-item {
   display: flex;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
 }
 
@@ -575,12 +575,12 @@ onMounted(() => {
 
 .message-content {
   max-width: 70%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 4px;
   word-wrap: break-word;
   white-space: pre-wrap;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .message-item.user .message-content {
@@ -597,7 +597,7 @@ onMounted(() => {
 /* Markdown 样式 */
 .markdown-body {
   white-space: normal;
-  padding: 12px !important;
+  padding: 10px !important;
 }
 
 .markdown-body h1,
@@ -606,68 +606,68 @@ onMounted(() => {
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  margin: 12px 0 8px 0;
+  margin: 8px 0 4px 0;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .markdown-body h1 {
-  font-size: 20px;
+  font-size: 18px;
   border-bottom: 1px solid #eaecef;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 
 .markdown-body h2 {
-  font-size: 18px;
-}
-
-.markdown-body h3 {
   font-size: 16px;
 }
 
-.markdown-body h4 {
+.markdown-body h3 {
   font-size: 14px;
 }
 
+.markdown-body h4 {
+  font-size: 13px;
+}
+
 .markdown-body p {
-  margin: 8px 0;
-  line-height: 1.6;
-}
-
-.markdown-body ul,
-.markdown-body ol {
-  margin: 8px 0;
-  padding-left: 24px;
-}
-
-.markdown-body li {
   margin: 4px 0;
   line-height: 1.5;
 }
 
+.markdown-body ul,
+.markdown-body ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.markdown-body li {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
 .markdown-body code:not(.hljs) {
   background: #f0f0f0;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 2px 4px;
+  border-radius: 2px;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 12px;
   color: #d63384;
 }
 
 .markdown-body pre {
   background: #1e1e1e !important;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow-x: auto;
-  margin: 8px 0;
-  padding: 12px !important;
+  margin: 4px 0;
+  padding: 8px !important;
 }
 
 .markdown-body pre code {
   background: none !important;
   padding: 0 !important;
   border-radius: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   font-family: 'Courier New', Courier, monospace;
 }
 
@@ -678,26 +678,27 @@ onMounted(() => {
 }
 
 .markdown-body blockquote {
-  border-left: 4px solid #dfe2e5;
-  margin: 8px 0;
-  padding: 0 12px;
+  border-left: 3px solid #dfe2e5;
+  margin: 4px 0;
+  padding: 0 8px;
   color: #6a737d;
+  font-size: 13px;
 }
 
 .markdown-body blockquote p {
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 .markdown-body table {
   border-collapse: collapse;
-  margin: 8px 0;
-  font-size: 13px;
+  margin: 4px 0;
+  font-size: 12px;
 }
 
 .markdown-body table th,
 .markdown-body table td {
   border: 1px solid #dfe2e5;
-  padding: 6px 12px;
+  padding: 4px 8px;
   text-align: left;
 }
 
@@ -732,12 +733,12 @@ onMounted(() => {
 }
 
 .input-area {
-  padding: 12px;
+  padding: 10px;
   border-top: 1px solid #f0f0f0;
 }
 
 .preview-section {
-  width: 50%;
+  width: 60%;
   background: #fff;
   border-radius: 4px;
   overflow: hidden;
@@ -750,13 +751,13 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid #f0f0f0;
   background: #fafafa;
 }
 
 .preview-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #666;
 }
@@ -779,7 +780,7 @@ onMounted(() => {
   justify-content: center;
   height: 100%;
   color: #999;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 :deep(.ant-input-group) {

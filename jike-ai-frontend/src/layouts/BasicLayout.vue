@@ -26,6 +26,7 @@ const { Header, Footer } = Layout
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 .header {
@@ -38,25 +39,31 @@ const { Header, Footer } = Layout
 }
 
 .content {
-  padding: 24px;
-  margin: 16px auto 56px;
+  padding: 0;
+  margin: 0;
   width: 100%;
-  max-width: 1200px;
+  background: transparent;
+  flex: 1;
 }
 
 .footer {
-  background: #fff;
+  background: transparent;
   padding: 24px 0;
   text-align: center;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid rgba(120, 100, 200, 0.1);
+}
+
+/* 清除 Ant Design Layout 默认背景色 */
+:deep(.ant-layout) {
+  background: transparent;
+}
+
+:deep(.ant-layout-content) {
+  background: transparent;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .content {
-    padding: 16px;
-  }
-
   .footer {
     padding: 16px 0;
   }

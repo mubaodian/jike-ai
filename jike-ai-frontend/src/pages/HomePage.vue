@@ -1,25 +1,49 @@
 <template>
   <div id="homePage">
-    <div class="header-section">
-      <h1 class="title">即刻 AI 应用平台</h1>
-      <p class="subtitle">只需一句话，即刻生成完整应用</p>
-    </div>
+    <!-- 内容容器 -->
+    <div class="home-content">
+      <div class="header-section">
+        <h1 class="title">即刻 AI 应用平台</h1>
+        <p class="subtitle">一句话轻松创建网站应用</p>
+      </div>
 
-    <!-- 用户提示词输入框 -->
-    <div class="input-section">
-      <a-input-search
-        v-model:value="prompt"
-        size="large"
-        placeholder="请描述您想要的应用功能，例如：生成一个待办事项列表应用"
-        allow-clear
-        @search="handleCreateApp"
-        @keyup.enter="handleCreateApp"
-      >
-        <template #enterButton>
-          <a-button type="primary" :loading="loading">生成应用</a-button>
-        </template>
-      </a-input-search>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <!-- 用户提示词输入框 -->
+      <div class="input-section">
+        <div class="input-wrapper">
+          <a-input
+            v-model:value="prompt"
+            size="large"
+            placeholder="帮我创建个人博客网站"
+            allow-clear
+            @keyup.enter="handleCreateApp"
+          />
+          <a-button
+            type="primary"
+            :loading="loading"
+            size="large"
+            @click="handleCreateApp"
+            class="generate-btn"
+          >
+            生成应用
+          </a-button>
+        </div>
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      </div>
+
+      <!-- 快捷提示词示例 -->
+      <div class="quick-prompts">
+        <div class="quick-prompts-list">
+          <a-button
+            v-for="(example, index) in quickExamples"
+            :key="index"
+            type="default"
+            class="quick-prompt-btn"
+            @click="selectQuickExample(example.prompt)"
+          >
+            {{ example.title }}
+          </a-button>
+        </div>
+      </div>
     </div>
 
     <!-- 我的应用卡片列表 -->
@@ -68,18 +92,6 @@
                   <div class="app-name">{{ app.appName }}</div>
                   <div class="user-name">{{ app.user?.userName }}</div>
                 </div>
-              </div>
-              <!-- 卡片操作 -->
-              <div class="card-actions">
-                <a-popconfirm
-                  title="删除应用"
-                  description="确定要删除此应用吗？"
-                  ok-text="确定"
-                  cancel-text="取消"
-                  @confirm="handleDeleteApp(app.id!)"
-                >
-                  <a-button type="link" danger size="small">删除</a-button>
-                </a-popconfirm>
               </div>
             </div>
           </div>
@@ -177,6 +189,34 @@ const loginUserStore = useLoginUserStore()
 const prompt = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
+
+// 快捷提示词示例
+const quickExamples = ref([
+  {
+    title: '个人博客网站',
+    prompt:
+      '创建一个个人博客网站，需要展示文章列表、详情页、分类功能、时间归档、搜索功能、评论区、关于我页面等。使用现代化的设计风格，深色主题。左侧导航栏显示分类，右侧主区域展示文章。支持Markdown格式的文章展示和代码高亮。',
+  },
+  {
+    title: '产品展示页',
+    prompt:
+      '设计一个SaaS产品展示页面，包括顶部导航栏、英雄区域（大标题、副标题、CTA按钮）、产品特性部分、定价方案对比表、用户评价/案例、常见问题FAQ、底部联系方式等。配色方案为专业蓝色和白色组合，要求响应式设计在手机、平板、桌面上都表现良好。',
+  },
+  {
+    title: '电商店铺首页',
+    prompt:
+      '建立一个现代电商平台首页，需要包含顶部搜索栏和导航、轮播图展示、热销产品网格、品牌介绍、优惠活动、新品上市、用户评价、底部友情链接和联系方式。产品卡片显示图片、价格、评分、购物车按钮。整体设计简洁专业，配色为黑白灰搭配亮色强调。',
+  },
+  {
+    title: '在线教育平台',
+    prompt:
+      '开发一个在线教育平台首页，包括课程搜索、热门课程卡片、讲师介绍、学习路径展示、学生学习成果展示、平台优势说明、用户评价、常见问题、新闻资讯、底部社交媒体链接等。设计应突出学习氛围，使用蓝绿色系搭配，确保易于导航和课程查找。',
+  },
+])
+
+const selectQuickExample = (examplePrompt: string) => {
+  prompt.value = examplePrompt
+}
 
 const myAppLoading = ref(false)
 const goodAppLoading = ref(false)
@@ -284,22 +324,6 @@ const fetchGoodAppList = async () => {
   }
 }
 
-// 删除应用
-const handleDeleteApp = async (appId: number) => {
-  try {
-    const res = await deleteApp({ id: appId })
-    if (res.data.code === 0) {
-      message.success('应用删除成功')
-      await fetchMyAppList()
-    } else {
-      message.error(res.data.message || '删除失败')
-    }
-  } catch (error) {
-    message.error('删除应用出错')
-    console.error('删除应用错误:', error)
-  }
-}
-
 // 表格分页变化
 const handleMyAppPageChange = (page: number) => {
   myAppPagination.current = page
@@ -335,7 +359,49 @@ onMounted(() => {
 
 <style scoped>
 #homePage {
-  padding: 40px 20px;
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(-20deg, #e9defa 0%, #fbfcdb 100%);
+  background-size: 100% 300%;
+  animation: bgShift 8s ease-in-out infinite;
+}
+
+#homePage::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(120, 100, 200, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 100, 200, 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: linear-gradient(135deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 75%);
+  mask-image: linear-gradient(135deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 75%);
+  animation: gridPulse 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes gridPulse {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+#homePage > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes bgShift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* 内容容器 */
+.home-content {
+  position: relative;
+  padding: 64px 40px 40px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -346,41 +412,133 @@ onMounted(() => {
 }
 
 .title {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #000;
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #1a2a4a;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
   font-size: 16px;
-  color: #999;
+  color: #7a8fad;
   margin: 0;
+  font-weight: 400;
 }
 
 .input-section {
-  margin-bottom: 50px;
+  margin-bottom: 24px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 16px;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(60, 100, 180, 0.1);
+  overflow: hidden;
+}
+
+:deep(.input-wrapper .ant-input-affix-wrapper),
+:deep(.input-wrapper .ant-input) {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: 15px;
+  box-shadow: none !important;
+  outline: none !important;
+  height: auto !important;
+}
+
+:deep(.input-wrapper .ant-input-affix-wrapper:focus),
+:deep(.input-wrapper .ant-input:focus),
+:deep(.input-wrapper .ant-input-affix-wrapper-focused) {
+  box-shadow: none !important;
+}
+
+.generate-btn {
+  border-radius: 0 10px 10px 0 !important;
+  padding: 0 28px !important;
+  height: auto !important;
+  min-height: 46px;
+  align-self: stretch;
+  font-weight: 600;
+  font-size: 14px;
+  background: #3b6fd4 !important;
+  border: none !important;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.generate-btn:hover {
+  background: #2d5bbf !important;
 }
 
 .error-message {
   color: #ff4d4f;
-  margin-top: 8px;
+  margin: 8px 0 0 0;
   font-size: 14px;
+  text-align: center;
 }
 
+/* 快捷提示词示例 */
+.quick-prompts {
+  margin-bottom: 48px;
+}
+
+.quick-prompts-title {
+  text-align: center;
+  font-size: 13px;
+  color: #9aabcc;
+  margin-bottom: 12px;
+  font-weight: 400;
+}
+
+.quick-prompts-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+:deep(.quick-prompt-btn) {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(100, 140, 210, 0.2) !important;
+  border-radius: 20px !important;
+  font-size: 13px !important;
+  padding: 4px 16px !important;
+  height: 32px !important;
+  color: #4a6a9a !important;
+  transition: all 0.2s ease;
+  box-shadow: none !important;
+}
+
+:deep(.quick-prompt-btn:hover) {
+  background: #fff !important;
+  border-color: #3b6fd4 !important;
+  color: #3b6fd4 !important;
+}
+
+/* 应用区域 - 无背景框，直接铺在页面上 */
 .app-section {
-  margin-bottom: 50px;
+  max-width: 1200px;
+  margin: 0 auto 48px;
+  padding: 0 40px;
 }
 
 .app-section h2 {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 16px;
-  color: #000;
-}
-
-:deep(.ant-table) {
-  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #1a2a4a;
 }
 
 .app-cards-container {
@@ -389,24 +547,25 @@ onMounted(() => {
 
 .app-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .app-card {
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
+  border: none;
+  border-radius: 12px;
   overflow: hidden;
   background: #fff;
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(60, 100, 180, 0.08);
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
   cursor: pointer;
 }
 
 .app-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(60, 100, 180, 0.15);
+  transform: translateY(-3px);
 }
 
 .app-card:hover .card-overlay {
@@ -415,9 +574,9 @@ onMounted(() => {
 
 .card-cover {
   width: 100%;
-  height: 160px;
+  height: 150px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #eef2f8;
   position: relative;
 }
 
@@ -433,9 +592,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-  color: #999;
-  font-size: 14px;
+  background: linear-gradient(135deg, #dce8f7 0%, #e8edf8 100%);
+  color: #aabbd4;
+  font-size: 13px;
 }
 
 .card-overlay {
@@ -444,12 +603,12 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(20, 40, 80, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
 }
 
 .card-footer {
@@ -470,10 +629,10 @@ onMounted(() => {
 }
 
 .app-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #000;
-  margin-bottom: 4px;
+  color: #1a2a4a;
+  margin-bottom: 3px;
   word-break: break-word;
   white-space: normal;
   display: -webkit-box;
@@ -484,7 +643,7 @@ onMounted(() => {
 
 .user-name {
   font-size: 12px;
-  color: #999;
+  color: #9aabcc;
   word-break: break-word;
   white-space: normal;
   display: -webkit-box;
@@ -495,8 +654,8 @@ onMounted(() => {
 
 .card-actions {
   padding: 8px 12px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-top: 1px solid #f0f4fa;
+  background: #fafcff;
 }
 
 .pagination-container {
@@ -508,6 +667,6 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: #9aabcc;
 }
 </style>

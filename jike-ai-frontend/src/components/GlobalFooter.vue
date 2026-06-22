@@ -22,28 +22,29 @@ const currentYear = ref(new Date().getFullYear())
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  background: transparent;
 }
 
 .footer-text {
   margin: 0;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(60, 40, 120, 0.55);
 }
 
 .footer-text a {
-  color: #1890ff;
+  color: #7b6fcf;
   text-decoration: none;
   transition: color 0.3s;
 }
 
 .footer-text a:hover {
-  color: #40a9ff;
+  color: #5b4fbf;
 }
 
 .footer-copyright {
   margin: 0;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: rgba(60, 40, 120, 0.35);
 }
 
 /* 响应式设计 */
