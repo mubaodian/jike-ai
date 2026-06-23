@@ -193,6 +193,7 @@ import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { formatTime } from '@/utils/time'
 import { renderMarkdown } from '@/utils/markdown'
+import { getStaticPreviewUrl } from '@/env'
 import request from '@/request'
 
 const route = useRoute()
@@ -324,7 +325,7 @@ const streamGenCode = async (message: string) => {
     messages.value.push(aiMessageObj)
 
     // 获取 axios 配置的 baseURL
-    const baseURL = request.defaults.baseURL
+    const baseURL = request.defaults.baseURL || 'http://localhost:8123/api'
 
     // 使用 EventSource 处理 SSE（Server-Sent Events）
     const eventSource = new EventSource(
@@ -405,7 +406,7 @@ const streamGenCode = async (message: string) => {
 
 // 更新预览URL
 const updatePreviewUrl = () => {
-  previewUrl.value = `http://localhost:8123/api/static/${codeGenType.value}_${appId.value}/`
+  previewUrl.value = getStaticPreviewUrl(codeGenType.value, appId.value)
 }
 
 // 部署应用

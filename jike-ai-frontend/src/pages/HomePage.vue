@@ -182,6 +182,7 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { addApp, listMyAppVoByPage, listGoodAppVoByPage, deleteApp } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { getDeployUrl } from '@/env'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -347,7 +348,7 @@ const goToAppDetail = (appId: number) => {
 
 // 打开查看作品页面
 const openViewWorkPage = (deployKey: string) => {
-  window.open(`http://localhost/${deployKey}`, '_blank')
+  window.open(getDeployUrl(deployKey), '_blank')
 }
 
 // 页面加载时获取列表
