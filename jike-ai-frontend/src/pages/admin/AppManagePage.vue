@@ -18,13 +18,17 @@
             v-model:value="searchForm.codeGenType"
             placeholder="选择生成类型"
             allow-clear
+            :dropdown-match-select-width="false"
             style="width: 120px"
           >
             <a-select-option value="">全部</a-select-option>
-            <a-select-option value="html">html</a-select-option>
-            <a-select-option value="react">React</a-select-option>
-            <a-select-option value="vue">Vue</a-select-option>
-            <a-select-option value="multi_file">multi_file</a-select-option>
+            <a-select-option
+              v-for="option in CODE_GEN_TYPE_OPTIONS"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item>
@@ -50,7 +54,9 @@
             <div v-if="record.cover" class="cover-preview">
               <img :src="record.cover" :alt="record.appName" />
             </div>
-            <div v-else class="cover-placeholder">无封面</div>
+            <div v-else class="cover-placeholder">
+              <RobotOutlined class="cover-placeholder-icon" />
+            </div>
           </template>
           <template v-else-if="column.key === 'userName'">
             {{ record.user?.userName || '-' }}
@@ -111,6 +117,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { RobotOutlined } from '@ant-design/icons-vue'
 import {
   listAppVoByPageByAdmin,
   deleteAppByAdmin,
@@ -118,6 +125,7 @@ import {
 } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { formatTime } from '@/utils/time'
+import { CODE_GEN_TYPE_OPTIONS } from '@/constants/codeGenType'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -357,9 +365,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg,#cfd9df 0%, #e2ebf0 100%);
   border-radius: 4px;
-  color: #999;
-  font-size: 12px;
+}
+
+.cover-placeholder-icon {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.85);
 }
 </style>

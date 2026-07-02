@@ -4,7 +4,7 @@
     <div class="card-cover">
       <img v-if="app.cover" :src="app.cover" :alt="app.appName" class="cover-image" />
       <div v-else class="cover-placeholder">
-        <span>无封面</span>
+        <RobotOutlined class="cover-placeholder-icon" />
       </div>
       <!-- 悬停按钮覆盖层 -->
       <div class="card-overlay">
@@ -12,7 +12,11 @@
           <a-button type="primary" size="small" @click.stop="emit('view-chat', app.id!)">
             查看对话
           </a-button>
-          <a-button v-if="app.deployKey" size="small" @click.stop="emit('view-work', app.deployKey!)">
+          <a-button
+            v-if="app.deployKey"
+            size="small"
+            @click.stop="emit('view-work', app.deployKey!)"
+          >
             查看作品
           </a-button>
         </a-space>
@@ -21,8 +25,13 @@
     <!-- 卡片底部信息 -->
     <div class="card-footer">
       <div class="user-avatar">
-        <a-avatar v-if="app.user?.userAvatar" :src="app.user.userAvatar" :size="40" />
-        <a-avatar v-else :size="40">
+        <a-avatar
+          shape="circle"
+          v-if="app.user?.userAvatar"
+          :src="app.user.userAvatar"
+          :size="40"
+        />
+        <a-avatar shape="circle" v-else :size="40">
           {{ app.user?.userName?.charAt(0) || 'U' }}
         </a-avatar>
       </div>
@@ -35,6 +44,8 @@
 </template>
 
 <script setup lang="ts">
+import { RobotOutlined } from '@ant-design/icons-vue'
+
 defineProps<{
   app: API.AppVO
 }>()
@@ -87,9 +98,12 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #dce8f7 0%, #e8edf8 100%);
-  color: #aabbd4;
-  font-size: 13px;
+  background: linear-gradient(135deg,#cfd9df 0%, #e2ebf0 100%);
+}
+
+.cover-placeholder-icon {
+  font-size: 40px;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .card-overlay {

@@ -11,8 +11,8 @@
         <div class="detail-item">
           <span class="detail-label">创建者</span>
           <div class="creator-info">
-            <a-avatar v-if="appUserInfo?.userAvatar" :src="appUserInfo.userAvatar" :size="32" />
-            <a-avatar v-else :size="32">
+            <a-avatar shape="circle" v-if="appUserInfo?.userAvatar" :src="appUserInfo.userAvatar" :size="32" />
+            <a-avatar shape="circle" v-else :size="32">
               {{ appUserInfo?.userName?.charAt(0) || 'U' }}
             </a-avatar>
             <span class="creator-name">{{ appUserInfo?.userName }}</span>

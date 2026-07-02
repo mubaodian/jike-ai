@@ -119,10 +119,11 @@ const doLogout = async () => {
           <a-dropdown>
             <a-space>
               <a-avatar
+                shape="circle"
                 v-if="loginUserStore.loginUser.userAvatar"
                 :src="loginUserStore.loginUser.userAvatar"
               ></a-avatar>
-              <a-avatar v-else>
+              <a-avatar shape="circle" v-else>
                 <template #icon>
                   <UserOutlined />
                 </template>

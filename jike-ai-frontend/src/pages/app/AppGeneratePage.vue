@@ -33,6 +33,7 @@
             <img v-if="msg.role === 'assistant'" src="@/assets/aiAvatar.png" class="message-avatar ai-avatar" />
             <a-avatar
               v-else
+              shape="circle"
               :src="loginUserStore.loginUser.userAvatar"
               :size="32"
               class="message-avatar user-avatar"
@@ -300,7 +301,7 @@ const streamGenCode = async (message: string) => {
     )
 
     await new Promise<void>((resolve, reject) => {
-      eventSource.addEventListener('message', (event) => {
+      eventSource.addEventListener('message ', (event) => {
         try {
           const data = event.data.trim()
           console.log('收到 SSE 消息:', data.substring(0, 100))
@@ -536,6 +537,8 @@ onMounted(() => {
 
 .user-avatar {
   order: 2;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .message-content {
