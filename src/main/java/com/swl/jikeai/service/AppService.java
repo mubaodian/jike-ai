@@ -43,8 +43,8 @@ public interface AppService extends IService<App> {
 
     /**
      * 获取脱敏后的app信息列表
-     * @param appList
-     * @return
+     * @param appList 应用列表
+     * @return  脱敏后的app列表
      */
     List<AppVO> getAppVOList(List<App> appList);
 
@@ -55,4 +55,11 @@ public interface AppService extends IService<App> {
      * @return 查询条件
      */
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
+
+    /**
+     * AI自动获取应用名称
+     * @param userMessage 用户提示词
+     * @return 应用名称
+     */
+    String getAppName(String userMessage);
 }

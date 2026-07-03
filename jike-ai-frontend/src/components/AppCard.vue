@@ -36,7 +36,7 @@
         </a-avatar>
       </div>
       <div class="app-info">
-        <div class="app-name">{{ app.appName }}</div>
+        <div class="app-name">{{ app.appName || app.initPrompt}}</div>
         <div class="user-name">{{ app.user?.userName }}</div>
       </div>
     </div>

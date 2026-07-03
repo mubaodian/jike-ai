@@ -20,9 +20,16 @@ class AiCodeGeneratorServiceTest {
 ////        Assertions.assertNotNull(result);
 ////    }
 
+//    @Test
+//    void generateMultiFileCode(){
+//        MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode("做一个留言板，30行代码");
+//        Assertions.assertNotNull(result);
+//    }
+
     @Test
-    void generateMultiFileCode(){
-        MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode("做一个留言板，30行代码");
-        Assertions.assertNotNull(result);
+    void genAppName() {
+        String appName = aiCodeGeneratorService.genAppName("做一个贪吃蛇小游戏，30行代码");
+        System.out.println(appName);
+        Assertions.assertNotNull(appName);
     }
 }

@@ -121,8 +121,8 @@ public class AppController {
         App app = new App();
         BeanUtils.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
-        // app名称暂时设置未 initPrompt 前12位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 设置app名称
+        app.setAppName(appService.getAppName(initPrompt));
         // 代码类型暂时设置为多文件类型
         app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
         //插入数据

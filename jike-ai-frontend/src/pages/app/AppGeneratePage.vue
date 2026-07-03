@@ -301,10 +301,10 @@ const streamGenCode = async (message: string) => {
     )
 
     await new Promise<void>((resolve, reject) => {
-      eventSource.addEventListener('message ', (event) => {
+      eventSource.addEventListener('message', (event) => {
         try {
           const data = event.data.trim()
-          console.log('收到 SSE 消息:', data.substring(0, 100))
+          // console.log('收到 SSE 消息:', data.substring(0, 100))
 
           if (data) {
             // 解析 JSON 包装的数据: {"d": "内容"}

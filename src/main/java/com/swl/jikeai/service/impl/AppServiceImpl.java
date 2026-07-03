@@ -5,14 +5,16 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.swl.jikeai.ai.AiCodeGeneratorService;
 import com.swl.jikeai.core.AiCodeGeneratorFacade;
 import com.swl.jikeai.exception.BusinessException;
 import com.swl.jikeai.exception.ErrorCode;
+import com.swl.jikeai.mapper.AppMapper;
 import com.swl.jikeai.model.dto.app.AppQueryRequest;
 import com.swl.jikeai.model.entity.App;
-import com.swl.jikeai.mapper.AppMapper;
 import com.swl.jikeai.model.entity.User;
 import com.swl.jikeai.model.enums.CodeGenTypeEnum;
 import com.swl.jikeai.model.vo.AppVO;
@@ -41,49 +43,51 @@ import static com.swl.jikeai.constant.AppConstant.*;
  * @author mubaodian
  */
 @Service
-public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
+public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Resource
     private UserService userService;
+    @Resource
+    private AiCodeGeneratorService aiCodeGeneratorService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
         // 参数校验
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR,"应用Id无效");
-        ThrowUtils.throwIf(StrUtil.isBlankIfStr(message),ErrorCode.PARAMS_ERROR,"用户消息不能为空");
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用Id无效");
+        ThrowUtils.throwIf(StrUtil.isBlankIfStr(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
         // 查询应用信息
         App app = getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR,"应用不存在");
+        ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR, "应用不存在");
         // 验证是否是本人
-        if(!app.getUserId().equals(loginUser.getId())){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"无权限访问该应用");
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
         // 获取应用的代码生成类型
         String codeGenTypeStr = app.getCodeGenType();
         CodeGenTypeEnum codeGenType = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
-        ThrowUtils.throwIf(codeGenType == null, ErrorCode.PARAMS_ERROR,"不支持的代码生成类型");
+        ThrowUtils.throwIf(codeGenType == null, ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         // 调用AI生成代码
-       return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenType, appId);
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenType, appId);
     }
 
     @Override
     public String deployApp(Long appId, User loginUser) {
         // 校验参数
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR,"应用Id无效");
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用Id无效");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
         // 查询应用信息
         App app = getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR,"应用不存在");
+        ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR, "应用不存在");
         // 验证是否是本人
-        if(!app.getUserId().equals(loginUser.getId())){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"无权限访问该应用");
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
         // 检查是否已有 deployKey（有的话说明已部署，没有的话需要生成一个6位数的随机字符串）
         String deployKey = app.getDeployKey();
-        if(StrUtil.isBlank(deployKey)){
+        if (StrUtil.isBlank(deployKey)) {
             deployKey = RandomUtil.randomString(6);
         }
         // 构建源目录路径
@@ -92,13 +96,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         String sourceDirPath = CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
         // 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
-        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ErrorCode.SYSTEM_ERROR,"应用代码不存在，请先生成代码");
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
         // 复制文件代码到部署目录
         String deployDirPath = CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
             FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
         } catch (IORuntimeException e) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败，请稍后重试:" + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败，请稍后重试:" + e.getMessage());
         }
         // 更新应用信息(部署标识和部署时间)
         App updateApp = new App();
@@ -106,21 +110,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         updateApp.setDeployKey(deployKey);
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean result = this.updateById(updateApp);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR,"更新应用部署失败");
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署失败");
         // 返回部署文件路径（可访问的URL）
-        return StrUtil.format("{}/{}",CODE_DEPLOY_HOST,deployKey);
+        return StrUtil.format("{}/{}", CODE_DEPLOY_HOST, deployKey);
     }
 
     @Override
     public AppVO getAppVO(App app) {
-        if(app == null){
+        if (app == null) {
             return null;
         }
         AppVO appVO = new AppVO();
         BeanUtils.copyProperties(app, appVO);
         // 关联查询用户信息
         Long userId = app.getUserId();
-        if(userId != null){
+        if (userId != null) {
             User user = userService.getById(userId);
             UserVO userVO = userService.getUserVO(user);
             appVO.setUser(userVO);
@@ -141,8 +145,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 .collect(Collectors.toMap(User::getId, userService::getUserVO));
         return appList.stream().map(app -> {
             AppVO appVO = new AppVO();
-            BeanUtils.copyProperties(app,appVO);
-            if(app.getUserId() != null){
+            BeanUtils.copyProperties(app, appVO);
+            if (app.getUserId() != null) {
                 UserVO userVO = userVOMap.get(app.getUserId());
                 appVO.setUser(userVO);
             }
@@ -176,5 +180,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 .eq("priority", priority)
                 .eq("userId", userId)
                 .orderBy(sortField, "ascend".equals(sortOrder));
+    }
+
+    @Override
+    public String getAppName(String userMessage) {
+        String appNameJson = aiCodeGeneratorService.genAppName(userMessage);
+        return JSONUtil.parseObj(appNameJson).getStr("name");
     }
 }

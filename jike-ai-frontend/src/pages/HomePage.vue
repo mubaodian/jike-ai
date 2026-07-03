@@ -162,7 +162,7 @@ const goodAppList = ref<API.AppVO[]>([])
 
 const myAppPagination = reactive({
   current: 1,
-  pageSize: 20,
+  pageSize: 9,
   total: 0,
   showSizeChanger: false,
   showQuickJumper: true,
@@ -170,7 +170,7 @@ const myAppPagination = reactive({
 
 const goodAppPagination = reactive({
   current: 1,
-  pageSize: 20,
+  pageSize: 9,
   total: 0,
   showSizeChanger: false,
   showQuickJumper: true,
@@ -478,7 +478,7 @@ onMounted(() => {
 
 .app-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
