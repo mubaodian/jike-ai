@@ -25,6 +25,11 @@ const originItems
     path: '/admin/appManage',
   },
   {
+    key: 'chatHistoryManage',
+    label: '对话管理',
+    path: '/admin/chatHistoryManage',
+  },
+  {
     key: 'userManage',
     label: '用户管理',
     path: '/admin/userManage',

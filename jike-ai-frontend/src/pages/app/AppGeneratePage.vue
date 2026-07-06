@@ -29,6 +29,16 @@
       <div class="chat-section">
         <!-- 消息区域 -->
         <div class="messages-container" ref="messagesContainerRef">
+          <!-- 加载更多历史消息 -->
+          <div v-if="hasMore" class="load-more-container">
+            <a-button type="text" size="small" :loading="historyLoading" @click="loadMoreHistory">
+              加载更多历史消息
+            </a-button>
+          </div>
+          <div v-if="historyLoading && messages.length === 0" class="history-loading">
+            <a-spin size="small" />
+            <span>加载历史消息中...</span>
+          </div>
           <div v-for="(msg, index) in messages" :key="index" class="message-item" :class="msg.role">
             <img v-if="msg.role === 'assistant'" src="@/assets/aiAvatar.png" class="message-avatar ai-avatar" />
             <a-avatar
@@ -96,7 +106,7 @@
           </a-button>
         </div>
         <div v-if="previewUrl" class="preview-container">
-          <iframe :src="previewUrl" class="preview-iframe"></iframe>
+          <iframe :key="previewKey" :src="previewUrl" class="preview-iframe"></iframe>
         </div>
         <div v-else class="preview-empty">
           <p>等待生成网站内容...</p>
@@ -144,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed, reactive } from 'vue'
+import { onMounted, ref, computed, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message as antMessage } from 'ant-design-vue'
 import {
@@ -155,6 +165,7 @@ import {
 } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { formatTime } from '@/utils/time'
 import { renderMarkdown } from '@/utils/markdown'
@@ -181,12 +192,15 @@ const deployLoading = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
 const showAppDetailDrawer = ref(false)
+const previewKey = ref(0)
 
 // 消息容器引用（用于自动滚动）
 const messagesContainerRef = ref<HTMLElement | null>(null)
 
-// 是否为查看模式（不自动发送初始消息）
-const isViewMode = computed(() => route.query.view === '1')
+// 对话历史相关状态
+const historyLoading = ref(false)
+const hasMore = ref(false)
+const lastCreateTime = ref<string | undefined>(undefined)
 
 // 是否是自己的应用
 const isOwnApp = computed(() => appUserId.value === loginUserStore.loginUser.id)
@@ -194,14 +208,59 @@ const isOwnApp = computed(() => appUserId.value === loginUserStore.loginUser.id)
 // 是否是管理员
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === 'admin')
 
+// 加载对话历史（游标分页，向前加载）
+const loadHistory = async (appIdStr: string) => {
+  historyLoading.value = true
+  try {
+    const res = await listAppChatHistory({
+      appId: appIdStr as unknown as number,
+      pageSize: 10,
+      lastCreateTime: lastCreateTime.value,
+    })
+    if (res.data.code === 0 && res.data.data) {
+      const records = res.data.data.records || []
+      // 将历史消息转为展示格式，插入到消息列表头部（升序展示）
+      const historyMessages = records
+        .map((item) => ({
+          role: (item.messageType === 'ai' ? 'assistant' : 'user') as 'user' | 'assistant',
+          content: item.message || '',
+        }))
+        .reverse()
+      messages.value = [...historyMessages, ...messages.value]
+      // 游标：取本页最早一条的 createTime
+      const oldest = records[records.length - 1]
+      if (oldest) {
+        lastCreateTime.value = oldest.createTime ?? undefined
+      }
+      // 是否还有更多：本页返回条数等于 pageSize 则可能有更多
+      hasMore.value = records.length >= 10
+      return records.length
+    }
+  } catch (error) {
+    console.error('加载历史消息错误:', error)
+  } finally {
+    historyLoading.value = false
+  }
+  return 0
+}
+
+// 点击"加载更多历史消息"
+const loadMoreHistory = async () => {
+  if (!appId.value) return
+  const scrollEl = messagesContainerRef.value
+  const prevScrollHeight = scrollEl?.scrollHeight ?? 0
+  await loadHistory(appId.value)
+  // 保持滚动位置不跳动
+  await nextTick()
+  if (scrollEl) {
+    scrollEl.scrollTop = scrollEl.scrollHeight - prevScrollHeight
+  }
+}
+
 // 获取应用信息
 const fetchAppInfo = async () => {
   try {
-    // 直接使用字符串参数，避免精度丢失
     const appIdStr = route.params.appId as string
-    console.log('应用生成ID (字符串):', appIdStr)
-
-    // 校验：不能为空，只能由数字组成
     if (!appIdStr || !/^\d+$/.test(appIdStr)) {
       antMessage.error('应用ID无效')
       return
@@ -209,7 +268,6 @@ const fetchAppInfo = async () => {
 
     appId.value = appIdStr
     const res = await getAppVoById({ id: appIdStr as unknown as number })
-    console.log('获取应用信息响应:', res.data)
 
     if (res.data.code === 0 && res.data.data) {
       appName.value = res.data.data.appName || '应用'
@@ -218,15 +276,27 @@ const fetchAppInfo = async () => {
       appUserInfo.value = res.data.data.user
       createTime.value = formatTime(res.data.data.createTime)
 
-      // 初始化时，如果还没有生成过且不是查看模式，自动发送初始提示词
-      if (res.data.data.initPrompt && messages.value.length === 0 && !isViewMode.value) {
+      // 先加载最近10条历史消息
+      const historyCount = await loadHistory(appIdStr)
+
+      // 如果有至少2条历史消息，显示预览
+      if (messages.value.length >= 2) {
+        updatePreviewUrl()
+      }
+
+      // 仅当是自己的应用且没有历史消息时，才自动触发初始提示词
+      const ownApp = res.data.data.userId === loginUserStore.loginUser.id
+      if (res.data.data.initPrompt && historyCount === 0 && ownApp) {
         await autoSendInitialPrompt(res.data.data.initPrompt)
+      } else if (historyCount > 0) {
+        // 有历史消息时滚动到底部
+        await nextTick()
+        if (messagesContainerRef.value) {
+          messagesContainerRef.value.scrollTop = messagesContainerRef.value.scrollHeight
+        }
       }
     } else {
-      // 业务错误处理
-      const errorMsg = res.data.message || '获取应用信息失败'
-      antMessage.error(errorMsg)
-      console.error('获取应用信息业务错误:', res.data)
+      antMessage.error(res.data.message || '获取应用信息失败')
     }
   } catch (error) {
     antMessage.error('获取应用信息失败，请检查应用是否存在')
@@ -372,6 +442,7 @@ const streamGenCode = async (message: string) => {
 // 更新预览URL
 const updatePreviewUrl = () => {
   previewUrl.value = getStaticPreviewUrl(codeGenType.value, appId.value)
+  previewKey.value++
 }
 
 // 部署应用
@@ -504,6 +575,40 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+:deep(.load-more-container .ant-btn) {
+  color: #1890ff;
+  font-size: 12px;
+  border: 1px dashed #91caff;
+  border-radius: 12px;
+  padding: 0 14px;
+  height: 26px;
+  background: #e6f4ff;
+}
+
+:deep(.load-more-container .ant-btn:hover) {
+  background: #bae0ff;
+  border-color: #1890ff;
+}
+
+.history-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  color: #1890ff;
+  font-size: 13px;
+  background: #e6f4ff;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -517,7 +622,7 @@ onMounted(() => {
   display: flex;
   justify-content: flex-start;
   gap: 6px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .message-item.user {
