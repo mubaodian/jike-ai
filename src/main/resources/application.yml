@@ -9,16 +9,27 @@ spring:
     url: jdbc:mysql://localhost:3306/jike_ai
     username: root
     password: 248268
+  # redis
   data:
     redis:
       host: localhost
       port: 6379
       password:
       ttl: 3600
+  # session
+  session:
+    # session 30 天过期
+    timeout: 30d
 server:
   port: 8123
   servlet:
     context-path: /api
+    session:
+      cookie:
+        # cookie 30 天过期
+        max-age: 2592000
+        http-only: true
+        same-site: lax
 # AI
 langchain4j:
   open-ai:

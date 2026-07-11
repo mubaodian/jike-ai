@@ -40,6 +40,15 @@
             <version>3.5.13</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Spring Session + Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-session-data-redis</artifactId>
+        </dependency>
         <!--mysql-->
         <dependency>
             <groupId>com.mysql</groupId>
