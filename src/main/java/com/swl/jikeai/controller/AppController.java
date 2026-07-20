@@ -124,7 +124,7 @@ public class AppController {
         // 设置app名称
         app.setAppName(appService.getAppName(initPrompt));
         // 代码类型暂时设置为多文件类型
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         //插入数据
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
