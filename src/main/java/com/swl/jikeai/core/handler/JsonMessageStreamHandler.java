@@ -6,9 +6,11 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.swl.jikeai.ai.model.message.*;
 import com.swl.jikeai.core.builder.VueProjectBuilder;
+import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.model.entity.User;
 import com.swl.jikeai.model.enums.ChatHistoryMessageTypeEnum;
 import com.swl.jikeai.service.ChatHistoryService;
+import com.swl.jikeai.utils.ThrowUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.swl.jikeai.constant.AppConstant.CODE_OUTPUT_ROOT_DIR;
 
@@ -47,10 +50,12 @@ public class JsonMessageStreamHandler {
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
         Set<String> seenToolIds = new HashSet<>();
+        // 用于判断AI是否已经开始思考
+        AtomicBoolean thinkingStarted = new AtomicBoolean(false);
         return originFlux
                 .map(chunk -> {
                     // 解析每个 JSON 消息块
-                    return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds);
+                    return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds, thinkingStarted);
                 })
                 .filter(StrUtil::isNotEmpty) // 过滤空字串
                 .doOnComplete(() -> {
@@ -71,19 +76,31 @@ public class JsonMessageStreamHandler {
     /**
      * 解析并收集 TokenStream 数据
      */
-    private String handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder, Set<String> seenToolIds) {
+    private String handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder, Set<String> seenToolIds, AtomicBoolean thinkingStarted) {
         // 解析 JSON
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
+        ThrowUtils.throwIf(typeEnum == null, ErrorCode.SYSTEM_ERROR,"不支持的流消息类型: " + streamMessage.getType());
         switch (typeEnum) {
             case AI_RESPONSE -> {
+                String prefix = thinkingStarted.compareAndSet(true, false) ? "[/thinking]\n\n" : "";
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
                 String data = aiMessage.getData();
                 // 直接拼接响应
                 chatHistoryStringBuilder.append(data);
+                return prefix + data;
+            }
+            case AI_THINKING -> {
+                AiThinkingMessage aiThinkingMessage = JSONUtil.toBean(chunk, AiThinkingMessage.class);
+                String data = aiThinkingMessage.getData();
+                // 不用保存到数据库中，直接返回给前端
+                if (thinkingStarted.compareAndSet(false, true)) {
+                    return "[thinking]" + data;
+                }
                 return data;
             }
             case TOOL_REQUEST -> {
+                thinkingStarted.set(false);
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
                 // 检查是否是第一次看到这个工具 ID
@@ -97,6 +114,7 @@ public class JsonMessageStreamHandler {
                 }
             }
             case TOOL_EXECUTED -> {
+                thinkingStarted.set(false);
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
                 String relativeFilePath = jsonObject.getStr("relativeFilePath");

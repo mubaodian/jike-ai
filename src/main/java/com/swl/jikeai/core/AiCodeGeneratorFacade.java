@@ -6,6 +6,7 @@ import com.swl.jikeai.ai.AiCodeGeneratorServiceFacctory;
 import com.swl.jikeai.ai.model.HtmlCodeResult;
 import com.swl.jikeai.ai.model.MultiFileCodeResult;
 import com.swl.jikeai.ai.model.message.AiResponseMessage;
+import com.swl.jikeai.ai.model.message.AiThinkingMessage;
 import com.swl.jikeai.ai.model.message.ToolExecutedMessage;
 import com.swl.jikeai.ai.model.message.ToolRequestMessage;
 import com.swl.jikeai.core.parser.CodeParserExecutor;
@@ -15,6 +16,7 @@ import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.model.enums.CodeGenTypeEnum;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.PartialToolCall;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
@@ -138,6 +140,11 @@ public class AiCodeGeneratorFacade {
                 AiResponseMessage aiResponseMessage = new AiResponseMessage(response);
                 sink.next(JSONUtil.toJsonStr(aiResponseMessage));
             })
+                    .onPartialThinking((PartialThinking partialThinking) ->{
+                        String data = partialThinking.text();
+                        AiThinkingMessage aiThinkingMessage = new AiThinkingMessage(data);
+                        sink.next(JSONUtil.toJsonStr(aiThinkingMessage));
+                    })
                     .onPartialToolCall((PartialToolCall partialToolCall )-> {
                         ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder()
                                 .id(partialToolCall.id())

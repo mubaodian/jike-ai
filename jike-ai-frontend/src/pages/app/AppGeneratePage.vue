@@ -50,11 +50,9 @@
             >
               {{ loginUserStore.loginUser.userName?.charAt(0) || 'U' }}
             </a-avatar>
-            <div
-              v-if="msg.role === 'assistant'"
-              class="message-content markdown-body"
-              v-html="renderMarkdown(msg.content)"
-            />
+            <div v-if="msg.role === 'assistant'" class="message-content markdown-body">
+              <AssistantMessageContent :content="msg.content" />
+            </div>
             <div v-else class="message-content">{{ msg.content }}</div>
           </div>
           <div v-if="streaming && messages.length > 0 && messages[messages.length - 1]?.role !== 'assistant'" class="message-item assistant">
@@ -164,6 +162,7 @@ import {
   ExportOutlined,
 } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
+import AssistantMessageContent from '@/components/AssistantMessageContent.vue'
 import { getAppVoById, deployApp, deleteApp } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { useLoginUserStore } from '@/stores/loginUser'
@@ -380,9 +379,10 @@ const streamGenCode = async (message: string) => {
             // 解析 JSON 包装的数据: {"d": "内容"}
             const parsed = JSON.parse(data)
             if (parsed.d) {
-              // 实时更新消息内容（打字机效果）
-              aiMessageObj.content += parsed.d
-              console.log('解析数据块:', parsed.d.substring(0, 100))
+              const content = parsed.d
+              // 所有内容都累加到 AI 消息中（包括思考内容）
+              aiMessageObj.content += content
+              console.log('解析数据块:', content.substring(0, 100))
 
               // 自动滚动到最新消息
               if (messagesContainerRef.value) {
