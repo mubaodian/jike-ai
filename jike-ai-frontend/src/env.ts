@@ -1,6 +1,9 @@
 /**
  * 环境变量配置
  */
+
+import { CODE_GEN_TYPE_ENUM } from './constants/codeGenType'
+
 // 应用部署域名
 export const DEPLOY_BASE_URL = import.meta.env.VITE_DEPLOY_BASE_URL || 'http://localhost'
 
@@ -15,7 +18,11 @@ export const getDeployUrl = (deployKey: string) => {
   return `${DEPLOY_BASE_URL}/${deployKey}`
 }
 
-// 获取静态资源预览URL
+// 获取
 export const getStaticPreviewUrl = (codeGenType: string, appId: string) => {
-  return `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
+  const baseUrl = `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
+  if(codeGenType === CODE_GEN_TYPE_ENUM.VUE_PROJECT) {
+    return `${baseUrl}dist/index.html`
+  }
+  return baseUrl
 }
