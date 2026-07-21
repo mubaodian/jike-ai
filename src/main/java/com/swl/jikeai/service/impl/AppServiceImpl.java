@@ -10,6 +10,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.swl.jikeai.ai.AiCodeGeneratorService;
 import com.swl.jikeai.core.AiCodeGeneratorFacade;
+import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.core.handler.StreamHandlerExecutor;
 import com.swl.jikeai.exception.BusinessException;
 import com.swl.jikeai.exception.ErrorCode;
@@ -61,6 +62,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
 
     @Override
@@ -112,6 +115,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
+        // Vue 项目特殊处理：执行构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if(codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT){
+            // 构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败，请稍后重试");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists() || !distDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
+            // 将 dist 目录重命名为源目录
+            sourceDir = distDir;
+        }
         // 复制文件代码到部署目录
         String deployDirPath = CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
