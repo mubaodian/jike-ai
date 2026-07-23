@@ -10,7 +10,10 @@ import com.swl.jikeai.exception.ErrorCode;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.*;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -25,13 +28,11 @@ import java.util.UUID;
 @Slf4j
 public class WebScreenshotUtils {
 
-    private static final WebDriver webDriver;
+    private static final ThreadLocal<WebDriver> dirverThreadLocal = new ThreadLocal<>();
 
-    static {
-        final int DEFAULT_WIDTH = 1600;
-        final int DEFAULT_HEIGHT = 900;
-        webDriver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    }
+    private final static int DEFAULT_WIDTH = 1600;
+
+    private final static int DEFAULT_HEIGHT = 900;
 
     /**
      * 生成网页截图
@@ -45,6 +46,8 @@ public class WebScreenshotUtils {
             return null;
         }
         try {
+            // 获取 WebDriver
+            WebDriver webDriver = getDriver();
             // 创建临时目录
             String rootPath = System.getProperty("user.dir") + File.separator + "tmp"
                     + File.separator + "screenshots" + File.separator + UUID.randomUUID().toString().substring(0, 8);
@@ -72,6 +75,37 @@ public class WebScreenshotUtils {
         } catch (Exception e) {
             log.error("生成网页截图失败：{}", webUrl, e);
             return null;
+        }finally {
+            releaseDriver();
+        }
+    }
+
+    /**
+     *  从 ThreadLocal 中获取 WebDriver，确保每一个线程使用同一个 WebDriver
+     * @return WebDriver
+     */
+    public static WebDriver getDriver() {
+        WebDriver driver = dirverThreadLocal.get();
+        if (driver == null) {
+            driver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            dirverThreadLocal.set(driver);
+        }
+        return driver;
+    }
+
+    /**
+     *  当前线程使用完毕后，关闭并清理 WebDriver
+     */
+    public static void releaseDriver(){
+        WebDriver driver = dirverThreadLocal.get();
+        if(driver != null){
+            try {
+                driver.quit();
+            } catch (Exception e) {
+                log.error("关闭 WebDriver 失败",e);
+            } finally {
+                dirverThreadLocal.remove();
+            }
         }
     }
 
@@ -165,13 +199,5 @@ public class WebScreenshotUtils {
         }
     }
 
-
-    /**
-     * 程序关闭前销毁驱动
-     */
-    @PreDestroy
-    public void destroy() {
-        webDriver.quit();
-    }
 }
 
