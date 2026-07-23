@@ -24,6 +24,7 @@ import com.swl.jikeai.model.vo.AppVO;
 import com.swl.jikeai.model.vo.UserVO;
 import com.swl.jikeai.service.AppService;
 import com.swl.jikeai.service.ChatHistoryService;
+import com.swl.jikeai.service.ScreenshotService;
 import com.swl.jikeai.service.UserService;
 import com.swl.jikeai.utils.ThrowUtils;
 import jakarta.annotation.Resource;
@@ -64,6 +65,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+    @Resource
+    private ScreenshotService screenshotService;
 
 
     @Override
@@ -88,7 +91,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 调用AI生成代码
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenType, appId);
         // 收集 AI 响应内容并在完成后记录到对话历史中
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser,codeGenType);
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenType);
     }
 
     @Override
@@ -117,7 +120,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
         // Vue 项目特殊处理：执行构建
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if(codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT){
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
             // 构建
             boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
             ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败，请稍后重试");
@@ -141,8 +144,26 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean result = this.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署失败");
-        // 返回部署文件路径（可访问的URL）
-        return StrUtil.format("{}/{}", CODE_DEPLOY_HOST, deployKey);
+        // 构建应用访问 Url
+        String deployUrl = StrUtil.format("{}/{}", CODE_DEPLOY_HOST, deployKey);
+        // 异步生成截图并更新应用封面
+        generateAppScreenshotAsync(appId,deployUrl);
+        return deployUrl;
+    }
+
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl){
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() ->{
+            // 使用截图服务生成截图并上传
+            String cosUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(cosUrl);
+            boolean result = this.updateById(updateApp);
+            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
     }
 
     @Override
@@ -220,16 +241,17 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     /**
      * 删除应用时关联删除对话历史（无论对话历史是否删除成功，都要保证应用删除，所以这里不用事务）
+     *
      * @param id 数据主键
      * @return 是否成功
      */
     @Override
-    public boolean removeById(Serializable id){
-        if(id == null){
+    public boolean removeById(Serializable id) {
+        if (id == null) {
             return false;
         }
         long appId = Long.parseLong(id.toString());
-        if(appId <= 0){
+        if (appId <= 0) {
             return false;
         }
         // 先删除关联的对话历史
