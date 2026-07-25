@@ -10,6 +10,17 @@
           应用详情
         </a-button>
         <a-button
+          @click="downloadCode"
+          :loading="downloading"
+          :disabled="!isOwnApp"
+        >
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载代码
+        </a-button>
+
+        <a-button
           type="primary"
           :loading="deployLoading"
           :disabled="!isOwnApp"
@@ -40,7 +51,11 @@
             <span>加载历史消息中...</span>
           </div>
           <div v-for="(msg, index) in messages" :key="index" class="message-item" :class="msg.role">
-            <img v-if="msg.role === 'assistant'" src="@/assets/aiAvatar.png" class="message-avatar ai-avatar" />
+            <img
+              v-if="msg.role === 'assistant'"
+              src="@/assets/aiAvatar.png"
+              class="message-avatar ai-avatar"
+            />
             <a-avatar
               v-else
               shape="circle"
@@ -53,9 +68,17 @@
             <div v-if="msg.role === 'assistant'" class="message-content markdown-body">
               <AssistantMessageContent :content="msg.content" />
             </div>
+
             <div v-else class="message-content">{{ msg.content }}</div>
           </div>
-          <div v-if="streaming && messages.length > 0 && messages[messages.length - 1]?.role !== 'assistant'" class="message-item assistant">
+          <div
+            v-if="
+              streaming &&
+              messages.length > 0 &&
+              messages[messages.length - 1]?.role !== 'assistant'
+            "
+            class="message-item assistant"
+          >
             <img src="@/assets/aiAvatar.png" class="message-avatar ai-avatar" />
             <div class="message-content">
               <span class="typing-indicator">输出中...</span>
@@ -73,9 +96,7 @@
                 allow-clear
                 disabled
               />
-              <a-button type="primary" :loading="streaming" disabled>
-                发送
-              </a-button>
+              <a-button type="primary" :loading="streaming" disabled> 发送 </a-button>
             </a-input-group>
           </a-tooltip>
           <a-input-group v-else compact>
@@ -117,18 +138,9 @@
       <p>您的应用已成功部署！</p>
       <p>访问地址：</p>
       <div class="deploy-url-container">
-        <a-input
-          v-model:value="deployUrl"
-          :bordered="false"
-          readonly
-          class="deploy-url-input"
-        />
+        <a-input v-model:value="deployUrl" :bordered="false" readonly class="deploy-url-input" />
         <div class="deploy-url-actions">
-          <copy-outlined
-            class="copy-icon"
-            title="复制"
-            @click="handleCopyUrl"
-          />
+          <copy-outlined class="copy-icon" title="复制" @click="handleCopyUrl" />
           <export-outlined
             class="export-icon"
             title="新窗口打开"
@@ -160,6 +172,7 @@ import {
   CloudUploadOutlined,
   CopyOutlined,
   ExportOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import AssistantMessageContent from '@/components/AssistantMessageContent.vue'
@@ -188,6 +201,7 @@ const streaming = ref(false)
 const previewUrl = ref('')
 
 const deployLoading = ref(false)
+const downloading = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
 const showAppDetailDrawer = ref(false)
@@ -366,7 +380,7 @@ const streamGenCode = async (message: string) => {
       `${baseURL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(message)}`,
       {
         withCredentials: true, // 如果需要发送 cookie
-      }
+      },
     )
 
     await new Promise<void>((resolve, reject) => {
@@ -436,6 +450,44 @@ const streamGenCode = async (message: string) => {
     antMessage.error(`生成代码出错: ${error.message}`)
   } finally {
     streaming.value = false
+  }
+}
+
+// 下载代码
+const downloadCode = async () => {
+  if (!appId.value) {
+    antMessage.error('应用ID不存在')
+    return
+  }
+  downloading.value = true
+  try {
+    const API_BASE_URL = request.defaults.baseURL || ''
+    const url = `${API_BASE_URL}/app/download/${appId.value}`
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.status}`)
+    }
+    // 获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const fileName = contentDisposition?.match(/filename="(.+)"/)?.[1] || `app-${appId.value}.zip`
+    // 下载文件
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName
+    link.click()
+    // 清理
+    URL.revokeObjectURL(downloadUrl)
+    antMessage.success('代码下载成功')
+  } catch (error) {
+    console.error('下载失败：', error)
+    antMessage.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
   }
 }
 
@@ -530,7 +582,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-
 #appGeneratePage {
   display: flex;
   flex-direction: column;
@@ -662,6 +713,50 @@ onMounted(() => {
 .message-item.assistant .message-content {
   background: #f0f0f0;
   color: #000;
+}
+
+.thinking-box {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.thinking-header {
+  padding: 10px 12px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e8e8e8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.thinking-header:hover {
+  background: #f0f0f0;
+}
+
+.thinking-toggle {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  transition: transform 0.2s ease;
+  font-size: 12px;
+}
+
+.thinking-content {
+  padding: 10px 12px;
+  background: #fafafa;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 /* Markdown 样式 */
