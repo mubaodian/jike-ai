@@ -1,7 +1,8 @@
 package com.swl.jikeai.ai;
 
-import com.swl.jikeai.ai.model.MultiFileCodeResult;
+import cn.hutool.json.JSONUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 
 
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 
 @SpringBootTest
+@Slf4j
 class AiCodeGeneratorServiceTest {
     @Resource
     private AiCodeGeneratorService aiCodeGeneratorService;
@@ -29,7 +31,7 @@ class AiCodeGeneratorServiceTest {
     @Test
     void genAppName() {
         String appName = aiCodeGeneratorService.genAppName("做一个贪吃蛇小游戏，30行代码");
-        System.out.println(appName);
+        log.info("app name: {}", appName);
         Assertions.assertNotNull(appName);
     }
 }

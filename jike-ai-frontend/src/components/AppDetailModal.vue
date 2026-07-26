@@ -22,6 +22,10 @@
           <span class="detail-label">创建时间</span>
           <span class="detail-value">{{ createTime }}</span>
         </div>
+        <div v-if="codeGenType" class="detail-item">
+          <span class="detail-label">生成类型</span>
+          <a-tag color="blue">{{ getCodeGenTypeDisplay(codeGenType) }}</a-tag>
+        </div>
       </div>
 
       <!-- 操作栏（仅本人或管理员可见） -->
@@ -45,11 +49,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { getCodeGenTypeDisplay } from '@/constants/codeGenType'
 
 const props = defineProps<{
   visible: boolean
   appUserInfo?: API.UserVO
   createTime?: string
+  codeGenType?: string
   isOwnApp: boolean
   isAdmin: boolean
 }>()

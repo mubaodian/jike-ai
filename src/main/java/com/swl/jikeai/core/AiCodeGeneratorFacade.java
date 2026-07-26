@@ -2,7 +2,7 @@ package com.swl.jikeai.core;
 
 import cn.hutool.json.JSONUtil;
 import com.swl.jikeai.ai.AiCodeGeneratorService;
-import com.swl.jikeai.ai.AiCodeGeneratorServiceFacctory;
+import com.swl.jikeai.ai.AiCodeGeneratorServiceFactory;
 import com.swl.jikeai.ai.model.HtmlCodeResult;
 import com.swl.jikeai.ai.model.MultiFileCodeResult;
 import com.swl.jikeai.ai.model.message.AiResponseMessage;
@@ -34,7 +34,7 @@ import java.io.File;
 @Slf4j
 public class AiCodeGeneratorFacade {
     @Resource
-    private AiCodeGeneratorServiceFacctory aiCodeGeneratorServiceFacctory;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -49,7 +49,7 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "代码生成类型不能为空");
         }
         // 根据 appId 获取独立的 AI服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFacctory.getAiCodeGeneratorService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
@@ -79,7 +79,7 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "代码生成类型不能为空");
         }
         // 根据 appId 获取独立的 AI服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFacctory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> hmltCodeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);

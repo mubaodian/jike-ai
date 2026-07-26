@@ -22,7 +22,7 @@ import java.time.Duration;
 
 @Slf4j
 @Configuration
-public class AiCodeGeneratorServiceFacctory {
+public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatModel chatModel;
 

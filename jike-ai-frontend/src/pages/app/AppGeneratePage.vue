@@ -1,38 +1,41 @@
 <template>
   <div id="appGeneratePage">
     <div class="header-bar">
-      <div class="app-name">{{ appName }}</div>
-      <a-space>
-        <a-button @click="showAppDetailDrawer = true">
-          <template #icon>
-            <info-circle-outlined />
-          </template>
-          应用详情
-        </a-button>
-        <a-button
-          @click="downloadCode"
-          :loading="downloading"
-          :disabled="!isOwnApp"
-        >
-          <template #icon>
-            <DownloadOutlined />
-          </template>
-          下载代码
-        </a-button>
+      <div class="header-left">
+        <div class="app-name">
+          {{ appName }}
+          <a-tag v-if="codeGenType" color="blue" style="margin-left: 12px">{{ getCodeGenTypeDisplay(codeGenType) }}</a-tag>
+        </div>
+      </div>
+      <div class="header-right">
+        <a-space>
+          <a-button @click="showAppDetailDrawer = true">
+            <template #icon>
+              <info-circle-outlined />
+            </template>
+            应用详情
+          </a-button>
+          <a-button @click="downloadCode" :loading="downloading" :disabled="!isOwnApp">
+            <template #icon>
+              <DownloadOutlined />
+            </template>
+            下载代码
+          </a-button>
 
-        <a-button
-          type="primary"
-          :loading="deployLoading"
-          :disabled="!isOwnApp"
-          :title="!isOwnApp ? '只能部署自己的应用' : ''"
-          @click="handleDeploy"
-        >
-          <template #icon>
-            <cloud-upload-outlined />
-          </template>
-          部署应用
-        </a-button>
-      </a-space>
+          <a-button
+            type="primary"
+            :loading="deployLoading"
+            :disabled="!isOwnApp"
+            :title="!isOwnApp ? '只能部署自己的应用' : ''"
+            @click="handleDeploy"
+          >
+            <template #icon>
+              <cloud-upload-outlined />
+            </template>
+            部署应用
+          </a-button>
+        </a-space>
+      </div>
     </div>
 
     <div class="content-area">
@@ -155,6 +158,7 @@
       v-model:visible="showAppDetailDrawer"
       :app-user-info="appUserInfo"
       :create-time="createTime"
+      :code-gen-type="codeGenType"
       :is-own-app="isOwnApp"
       :is-admin="isAdmin"
       @edit="goToEditPage"
@@ -182,6 +186,7 @@ import { useLoginUserStore } from '@/stores/loginUser'
 import { formatTime } from '@/utils/time'
 import { renderMarkdown } from '@/utils/markdown'
 import { getStaticPreviewUrl } from '@/env'
+import { getCodeGenTypeDisplay } from '@/constants/codeGenType'
 import request from '@/request'
 
 const route = useRoute()

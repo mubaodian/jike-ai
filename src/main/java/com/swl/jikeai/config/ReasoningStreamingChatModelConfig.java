@@ -7,6 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Map;
+
 /**
  * 推理模型配置类
  */
@@ -29,12 +31,13 @@ public class ReasoningStreamingChatModelConfig {
 //        final String modelName = "deepseek-chat";
 //        final int maxTokens = 8192;
 //         生产环境使用：
-        final String modelName = "deepseek-reasoner";
+        final String modelName = "deepseek-v4-flash";
         final int maxTokens = 32768;
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .modelName(modelName)
+                .customParameters(Map.of("thinking", Map.of("type", "enabled")))
                 .returnThinking(true)
                 .maxTokens(maxTokens)
                 .logRequests(true)

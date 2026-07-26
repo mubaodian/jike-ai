@@ -18,3 +18,19 @@ export const CODE_GEN_TYPE_OPTIONS = [
   { label: '原生多文件模式', value: CODE_GEN_TYPE_ENUM.MULTI_FILE },
   { label: 'Vue 项目模式', value: CODE_GEN_TYPE_ENUM.VUE_PROJECT },
 ]
+
+/**
+ * 代码生成类型显示文本映射（用于 Tag 标签展示）
+ */
+export const CODE_GEN_TYPE_DISPLAY = {
+  [CODE_GEN_TYPE_ENUM.HTML]: 'HTML 模式',
+  [CODE_GEN_TYPE_ENUM.MULTI_FILE]: '多文件模式',
+  [CODE_GEN_TYPE_ENUM.VUE_PROJECT]: 'Vue 项目模式',
+} as const
+
+/**
+ * 根据类型值获取显示文本
+ */
+export const getCodeGenTypeDisplay = (type: string): string => {
+  return CODE_GEN_TYPE_DISPLAY[type as CodeGenType] || type
+}

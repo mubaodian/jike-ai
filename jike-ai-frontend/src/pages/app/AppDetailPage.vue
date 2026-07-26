@@ -1,6 +1,12 @@
 <template>
   <div id="appDetailPage">
-    <a-card title="应用信息" class="detail-card">
+    <a-card class="detail-card">
+      <template #title>
+        <div class="card-title">
+          <span>应用信息</span>
+          <a-tag v-if="formState.codeGenType" color="blue">{{ getCodeGenTypeDisplay(formState.codeGenType) }}</a-tag>
+        </div>
+      </template>
       <a-form
         ref="formRef"
         :model="formState"
@@ -55,6 +61,7 @@ import { message } from 'ant-design-vue'
 import { getAppVoById, updateApp, updateAppByAdmin } from '@/api/appController'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { formatTime } from '@/utils/time'
+import { getCodeGenTypeDisplay } from '@/constants/codeGenType'
 
 const route = useRoute()
 const router = useRouter()
@@ -72,6 +79,7 @@ const formState = reactive({
   createTime: '',
   cover: '',
   priority: undefined,
+  codeGenType: '',
 })
 
 const formRules = {
@@ -116,6 +124,7 @@ const fetchAppInfo = async () => {
         createTime: formatTime(app.createTime),
         cover: app.cover || '',
         priority: app.priority || 0,
+        codeGenType: app.codeGenType || '',
       })
     } else {
       // 业务错误处理
@@ -206,5 +215,11 @@ onMounted(() => {
 :deep(.ant-card-head-title) {
   font-size: 18px;
   font-weight: bold;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 </style>

@@ -14,7 +14,6 @@ import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.model.dto.app.*;
 import com.swl.jikeai.model.entity.App;
 import com.swl.jikeai.model.entity.User;
-import com.swl.jikeai.model.enums.CodeGenTypeEnum;
 import com.swl.jikeai.model.vo.AppVO;
 import com.swl.jikeai.service.AppService;
 import com.swl.jikeai.service.ProjectDownloadService;
@@ -156,22 +155,10 @@ public class AppController {
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest httpServletRequest) {
         // 校验参数
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
-        String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt不能为空");
         // 获取当前登录用户
         User loginUser = userService.getCurrentUser(httpServletRequest);
-        // 创建app对象
-        App app = new App();
-        BeanUtils.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
-        // 设置app名称
-        app.setAppName(appService.getAppName(initPrompt));
-        // 代码类型暂时设置为多文件类型
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-        //插入数据
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(app.getId());
+        Long appId = appService.createApp(appAddRequest, loginUser);
+        return ResultUtils.success(appId);
     }
 
     /**

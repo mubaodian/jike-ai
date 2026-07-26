@@ -2,6 +2,7 @@ package com.swl.jikeai.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.swl.jikeai.model.dto.app.AppAddRequest;
 import com.swl.jikeai.model.dto.app.AppQueryRequest;
 import com.swl.jikeai.model.entity.App;
 import com.swl.jikeai.model.entity.User;
@@ -24,6 +25,14 @@ public interface AppService extends IService<App> {
      * @return 代码流
      */
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 创建应用
+     * @param appAddRequest 创建应用请求类
+     * @param loginUser 登录用户
+     * @return 应用id
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
      * 应用部署

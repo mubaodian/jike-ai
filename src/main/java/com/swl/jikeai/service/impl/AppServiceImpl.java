@@ -8,13 +8,16 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.swl.jikeai.ai.AiCodeGenTypeRoutingService;
 import com.swl.jikeai.ai.AiCodeGeneratorService;
+import com.swl.jikeai.ai.tools.FileWriteTool;
 import com.swl.jikeai.core.AiCodeGeneratorFacade;
 import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.core.handler.StreamHandlerExecutor;
 import com.swl.jikeai.exception.BusinessException;
 import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.mapper.AppMapper;
+import com.swl.jikeai.model.dto.app.AppAddRequest;
 import com.swl.jikeai.model.dto.app.AppQueryRequest;
 import com.swl.jikeai.model.entity.App;
 import com.swl.jikeai.model.entity.User;
@@ -26,6 +29,7 @@ import com.swl.jikeai.service.AppService;
 import com.swl.jikeai.service.ChatHistoryService;
 import com.swl.jikeai.service.ScreenshotService;
 import com.swl.jikeai.service.UserService;
+import com.swl.jikeai.utils.ResultUtils;
 import com.swl.jikeai.utils.ThrowUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +71,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private ScreenshotService screenshotService;
-
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -92,6 +97,28 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenType, appId);
         // 收集 AI 响应内容并在完成后记录到对话历史中
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenType);
+    }
+
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser){
+        // 校验参数
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt不能为空");
+        // 创建app对象
+        App app = new App();
+        BeanUtils.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 设置app名称
+        app.setAppName(this.getAppName(initPrompt));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        log.info("智能选择代码生成类型：{}", selectedCodeGenType);
+        ThrowUtils.throwIf(selectedCodeGenType == null, ErrorCode.NOT_FOUND_ERROR, "不支持的代码生成类型");
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        //插入数据
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return app.getId();
     }
 
     @Override
