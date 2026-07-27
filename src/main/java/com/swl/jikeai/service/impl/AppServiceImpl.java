@@ -262,8 +262,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     public String getAppName(String userMessage) {
-        String appNameJson = aiCodeGeneratorService.genAppName(userMessage);
-        return JSONUtil.parseObj(appNameJson).getStr("name");
+        try {
+            String appNameJson = aiCodeGeneratorService.genAppName(userMessage);
+            return JSONUtil.parseObj(appNameJson).getStr("name");
+        } catch (Exception e) {
+            log.error("生成应用名称失败:{}", e.getMessage());
+            return userMessage.substring(0, Math.min(userMessage.length(), 12));
+        }
     }
 
     /**
