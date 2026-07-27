@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.swl.jikeai.ai.model.message.*;
+import com.swl.jikeai.ai.tools.BaseTool;
+import com.swl.jikeai.ai.tools.ToolManager;
 import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.model.entity.User;
@@ -32,6 +34,9 @@ public class JsonMessageStreamHandler {
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -100,36 +105,33 @@ public class JsonMessageStreamHandler {
                 return data;
             }
             case TOOL_REQUEST -> {
-                thinkingStarted.set(false);
+                String prefix = thinkingStarted.compareAndSet(true, false) ? "[/thinking]\n\n" : "";
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
+                String toolName = toolRequestMessage.getName();
                 // 检查是否是第一次看到这个工具 ID
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    // 根据名称获取工具实例
+                    BaseTool tool = toolManager.getTool(toolName);
+                    return prefix + tool.generateToolRequestResponse();
                 } else {
                     // 不是第一次调用这个工具，直接返回空
-                    return "";
+                    return prefix;
                 }
             }
             case TOOL_EXECUTED -> {
-                thinkingStarted.set(false);
+                String prefix = thinkingStarted.compareAndSet(true, false) ? "[/thinking]\n\n" : "";
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
+                String toolName = toolExecutedMessage.getName();
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                String result = String.format("""
-                        [工具调用] 写入文件 %s
-                        ```%s
-                        %s
-                        ```
-                        """, relativeFilePath, suffix, content);
+                BaseTool tool = toolManager.getTool(toolName);
+                String result = tool.generateToolExecutedResult(jsonObject);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
-                return output;
+                return prefix + output;
             }
             default -> {
                 log.error("不支持的消息类型: {}", typeEnum);
