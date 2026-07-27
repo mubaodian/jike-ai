@@ -89,6 +89,17 @@
           </div>
         </div>
 
+        <!-- 选中元素提示 -->
+        <div v-if="selectedElement" class="selected-element-alert">
+          <a-alert type="info" closable @close="handleClearSelection">
+            <template #message>
+              <span class="selected-element-text">
+                已选中元素: {{ getSelectionSummary() }}
+              </span>
+            </template>
+          </a-alert>
+        </div>
+
         <!-- 用户消息输入框 -->
         <div class="input-area">
           <a-tooltip v-if="!isOwnApp" title="无法在别人的作品下对话哦~" placement="top">
@@ -120,15 +131,28 @@
       <div class="preview-section">
         <div v-if="previewUrl" class="preview-header">
           <span class="preview-title">实时预览</span>
-          <a-button type="text" size="small" @click="openPreviewInNewWindow">
-            <template #icon>
-              <export-outlined />
-            </template>
-            新窗口打开
-          </a-button>
+          <div class="preview-actions">
+            <a-button
+              :type="editMode ? 'primary' : 'default'"
+              size="small"
+              :ghost="editMode"
+              @click="toggleEditMode"
+            >
+              <template #icon>
+                <edit-outlined />
+              </template>
+              {{ editMode ? '退出编辑' : '可视化编辑' }}
+            </a-button>
+            <a-button type="text" size="small" @click="openPreviewInNewWindow">
+              <template #icon>
+                <export-outlined />
+              </template>
+              新窗口打开
+            </a-button>
+          </div>
         </div>
-        <div v-if="previewUrl" class="preview-container">
-          <iframe :key="previewKey" :src="previewUrl" class="preview-iframe"></iframe>
+        <div v-if="previewUrl" class="preview-container" :class="{ 'edit-mode-active': editMode }">
+          <iframe ref="previewIframeRef" :key="previewKey" :src="previewUrl" class="preview-iframe" @load="handleIframeLoad"></iframe>
         </div>
         <div v-else class="preview-empty">
           <p>等待生成网站内容...</p>
@@ -177,6 +201,7 @@ import {
   CopyOutlined,
   ExportOutlined,
   DownloadOutlined,
+  EditOutlined,
 } from '@ant-design/icons-vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
 import AssistantMessageContent from '@/components/AssistantMessageContent.vue'
@@ -187,6 +212,7 @@ import { formatTime } from '@/utils/time'
 import { renderMarkdown } from '@/utils/markdown'
 import { getStaticPreviewUrl } from '@/env'
 import { getCodeGenTypeDisplay } from '@/constants/codeGenType'
+import { useVisualEditor } from '@/utils/visualEditor'
 import request from '@/request'
 
 const route = useRoute()
@@ -211,6 +237,42 @@ const deployModalVisible = ref(false)
 const deployUrl = ref('')
 const showAppDetailDrawer = ref(false)
 const previewKey = ref(0)
+
+// iframe 引用
+const previewIframeRef = ref<HTMLIFrameElement | null>(null)
+
+// 可视化编辑器
+const {
+  editMode,
+  selectedElement,
+  enterEditMode,
+  exitEditMode,
+  clearSelection,
+  buildPromptWithContext,
+  getSelectionSummary,
+} = useVisualEditor(() => previewIframeRef.value)
+
+// 切换编辑模式
+const toggleEditMode = () => {
+  if (editMode.value) {
+    exitEditMode()
+  } else {
+    enterEditMode()
+  }
+}
+
+// 清除选中元素
+const handleClearSelection = () => {
+  clearSelection()
+}
+
+// iframe 加载完成后，如果处于编辑模式则重新绑定事件
+const handleIframeLoad = () => {
+  if (editMode.value) {
+    exitEditMode()
+    enterEditMode()
+  }
+}
 
 // 消息容器引用（用于自动滚动）
 const messagesContainerRef = ref<HTMLElement | null>(null)
@@ -344,13 +406,21 @@ const handleSendMessage = async () => {
   }
 
   const msg = userMessage.value
+  // 构建带元素上下文的提示词
+  const promptToSend = buildPromptWithContext(msg)
+
   messages.value.push({
     role: 'user',
     content: msg,
   })
   userMessage.value = ''
 
-  await streamGenCode(msg)
+  // 发送后清除选中元素并退出编辑模式
+  if (editMode.value) {
+    exitEditMode()
+  }
+
+  await streamGenCode(promptToSend)
 }
 
 // 流式生成代码
@@ -926,6 +996,12 @@ onMounted(() => {
   background: #fafafa;
 }
 
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .preview-title {
   font-size: 13px;
   font-weight: 500;
@@ -951,6 +1027,21 @@ onMounted(() => {
   height: 100%;
   color: #999;
   font-size: 14px;
+}
+
+.edit-mode-active {
+  outline: 2px dashed #1890ff;
+  outline-offset: -2px;
+}
+
+.selected-element-alert {
+  padding: 8px 10px 0;
+}
+
+.selected-element-text {
+  font-size: 12px;
+  color: #333;
+  word-break: break-all;
 }
 
 :deep(.ant-input-group) {
