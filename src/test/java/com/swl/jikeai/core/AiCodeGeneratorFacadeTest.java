@@ -1,6 +1,5 @@
 package com.swl.jikeai.core;
 
-import com.swl.jikeai.ai.AiCodeGeneratorService;
 import com.swl.jikeai.model.enums.CodeGenTypeEnum;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
@@ -10,8 +9,6 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class AiCodeGeneratorFacadeTest {
@@ -25,7 +22,7 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertNotNull(file);
     }
 
-//    @Test
+    @Test
     void generateAndSaveCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("创建一个登录界面,不超过20行代码", CodeGenTypeEnum.MULTI_FILE,1L);
         // 阻塞等待所有数据收集完成
@@ -35,7 +32,7 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertNotNull(joinStr);
     }
 
-    @Test
+//    @Test
     void generateVueProjectCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
                 "简单的任务记录网站，总代码量不超过 200 行",

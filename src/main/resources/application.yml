@@ -37,6 +37,9 @@ langchain4j:
       base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-v4-flash
+      custom-parameters:
+        thinking:
+          type: "disabled"
       log-requests: true
       log-responses: true
       max-tokens: 8192
@@ -46,9 +49,16 @@ langchain4j:
       base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-v4-flash
+      custom-parameters:
+        thinking:
+          type: "disabled"
       log-requests: true
       log-responses: true
       max-tokens: 8192
+# 阿里云 DashScope 配置
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY}
+  image-model: wan2.2-t2i-flash
 # COS 对象存储配置
 cos:
   client:
@@ -68,3 +78,6 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+# Pexels 图片搜索配置
+pexels:
+  api-key: ${PEXELS_API_KEY}
