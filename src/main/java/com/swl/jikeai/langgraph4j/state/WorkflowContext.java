@@ -1,6 +1,7 @@
 package com.swl.jikeai.langgraph4j.state;
 
 import com.swl.jikeai.langgraph4j.model.ImageResource;
+import com.swl.jikeai.langgraph4j.model.QualityResult;
 import com.swl.jikeai.model.enums.CodeGenTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,6 +60,11 @@ public class WorkflowContext implements Serializable {
      * 构建成功的目录
      */
     private String buildResultDir;
+
+    /**
+     * 质量检查结果
+     */
+    private QualityResult qualityResult;
 
     /**
      * 错误信息

@@ -17,7 +17,7 @@ class CodeGenWorkflowTest {
         System.out.println("构建结果目录: " + result.getBuildResultDir());
     }
 
-//    @Test
+    @Test
     void testCorporateWorkflow() {
         WorkflowContext result = new CodeGenWorkflow().executeWorkflow("创建企业官网，展示公司形象和业务介绍");
         Assertions.assertNotNull(result);
@@ -35,7 +35,7 @@ class CodeGenWorkflowTest {
         System.out.println("构建结果目录: " + result.getBuildResultDir());
     }
 
-    @Test
+//    @Test
     void testSimpleHtmlWorkflow() {
         WorkflowContext result = new CodeGenWorkflow().executeWorkflow("创建一个简单的个人主页");
         Assertions.assertNotNull(result);
