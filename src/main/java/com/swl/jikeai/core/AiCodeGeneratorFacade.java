@@ -9,6 +9,8 @@ import com.swl.jikeai.ai.model.message.AiResponseMessage;
 import com.swl.jikeai.ai.model.message.AiThinkingMessage;
 import com.swl.jikeai.ai.model.message.ToolExecutedMessage;
 import com.swl.jikeai.ai.model.message.ToolRequestMessage;
+import com.swl.jikeai.constant.AppConstant;
+import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.core.parser.CodeParserExecutor;
 import com.swl.jikeai.core.saver.CodeFileSaverExecutor;
 import com.swl.jikeai.exception.BusinessException;
@@ -35,6 +37,9 @@ import java.io.File;
 public class AiCodeGeneratorFacade {
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -91,7 +96,7 @@ public class AiCodeGeneratorFacade {
             }
             case VUE_PROJECT -> {
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                yield this.processTokenStream(tokenStream);
+                yield this.processTokenStream(tokenStream,appId);
             }
             default -> {
                 String ErrorMessage = "不支持的代码生成类型：" + codeGenTypeEnum.getText();
@@ -133,7 +138,7 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream TokenStream对象
      * @return 流式响应
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream,Long appId) {
         return Flux.create(sink -> {
             tokenStream
                     .onPartialResponse((String response) -> {
@@ -159,6 +164,8 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse chatResponse) -> {
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + "vue_project_" + appId;
+                        vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
