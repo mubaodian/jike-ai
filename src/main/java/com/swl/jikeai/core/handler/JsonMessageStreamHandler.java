@@ -1,12 +1,12 @@
 package com.swl.jikeai.core.handler;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.swl.jikeai.ai.model.message.*;
 import com.swl.jikeai.ai.tools.BaseTool;
 import com.swl.jikeai.ai.tools.ToolManager;
+import com.swl.jikeai.constant.AppConstant;
 import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.exception.ErrorCode;
 import com.swl.jikeai.model.entity.User;
@@ -22,8 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.swl.jikeai.constant.AppConstant.CODE_OUTPUT_ROOT_DIR;
-
 /**
  * JSON 消息流处理器
  * 处理 VUE_PROJECT 类型的复杂流式响应，包含工具调用信息
@@ -34,6 +32,9 @@ public class JsonMessageStreamHandler {
 
     @Resource
     private ToolManager toolManager;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -54,7 +55,8 @@ public class JsonMessageStreamHandler {
         Set<String> seenToolIds = new HashSet<>();
         // 用于判断AI是否已经开始思考
         AtomicBoolean thinkingStarted = new AtomicBoolean(false);
-        return originFlux
+        // AI 回复流
+        Flux<String> aiFlux = originFlux
                 .map(chunk -> {
                     // 解析每个 JSON 消息块
                     return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds, thinkingStarted);
@@ -70,6 +72,20 @@ public class JsonMessageStreamHandler {
                     String errorMessage = "AI回复失败: " + error.getMessage();
                     chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
                 });
+
+        // 构建流
+        Flux<String> buildFlux = Flux.create(sink -> {
+            sink.next("\n\n[Vite构建工具] 正在打包构建...\n\n");
+            // 异步构造 Vue 项目
+            String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+            vueProjectBuilder.buildProjectAsync(projectPath, () -> {
+                sink.next("\n\n[Vite构建工具] 构建完成\n\n");
+                sink.complete();
+            });
+        });
+
+        // 拼接流
+        return aiFlux.concatWith(buildFlux);
     }
 
     /**
@@ -79,7 +95,7 @@ public class JsonMessageStreamHandler {
         // 解析 JSON
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
-        ThrowUtils.throwIf(typeEnum == null, ErrorCode.SYSTEM_ERROR,"不支持的流消息类型: " + streamMessage.getType());
+        ThrowUtils.throwIf(typeEnum == null, ErrorCode.SYSTEM_ERROR, "不支持的流消息类型: " + streamMessage.getType());
         switch (typeEnum) {
             case AI_RESPONSE -> {
                 String prefix = thinkingStarted.compareAndSet(true, false) ? "[/thinking]\n\n" : "";
