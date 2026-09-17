@@ -2,6 +2,7 @@ package com.swl.jikeai.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.swl.jikeai.ai.guardrail.PromptSafetyInputGuardrail;
 import com.swl.jikeai.ai.tools.*;
 import com.swl.jikeai.exception.BusinessException;
 import com.swl.jikeai.exception.ErrorCode;
@@ -94,6 +95,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加输入护轨
                     .build();
             // Vue 项目生成使用推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
@@ -101,6 +103,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "Error: there is no tool called: " + toolExecutionRequest.name()))
+                    .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加输入护轨
                     .build();
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型：" + codeGenType.getValue());
         };
