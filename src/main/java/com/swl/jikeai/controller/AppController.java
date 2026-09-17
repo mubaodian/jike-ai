@@ -15,6 +15,8 @@ import com.swl.jikeai.model.dto.app.*;
 import com.swl.jikeai.model.entity.App;
 import com.swl.jikeai.model.entity.User;
 import com.swl.jikeai.model.vo.AppVO;
+import com.swl.jikeai.ratelimiter.annotation.RateLimit;
+import com.swl.jikeai.ratelimiter.enums.RateLimitType;
 import com.swl.jikeai.service.AppService;
 import com.swl.jikeai.service.ProjectDownloadService;
 import com.swl.jikeai.service.UserService;
@@ -63,6 +65,7 @@ public class AppController {
      * @return 生成的代码流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5,rateInterval = 60,message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId, @RequestParam String message, HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用Id无效");

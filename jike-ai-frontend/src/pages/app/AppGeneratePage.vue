@@ -4,7 +4,9 @@
       <div class="header-left">
         <div class="app-name">
           {{ appName }}
-          <a-tag v-if="codeGenType" color="blue" style="margin-left: 12px">{{ getCodeGenTypeDisplay(codeGenType) }}</a-tag>
+          <a-tag v-if="codeGenType" color="blue" style="margin-left: 12px">{{
+            getCodeGenTypeDisplay(codeGenType)
+          }}</a-tag>
         </div>
       </div>
       <div class="header-right">
@@ -93,9 +95,7 @@
         <div v-if="selectedElement" class="selected-element-alert">
           <a-alert type="info" closable @close="handleClearSelection">
             <template #message>
-              <span class="selected-element-text">
-                已选中元素: {{ getSelectionSummary() }}
-              </span>
+              <span class="selected-element-text"> 已选中元素: {{ getSelectionSummary() }} </span>
             </template>
           </a-alert>
         </div>
@@ -152,7 +152,13 @@
           </div>
         </div>
         <div v-if="previewUrl" class="preview-container" :class="{ 'edit-mode-active': editMode }">
-          <iframe ref="previewIframeRef" :key="previewKey" :src="previewUrl" class="preview-iframe" @load="handleIframeLoad"></iframe>
+          <iframe
+            ref="previewIframeRef"
+            :key="previewKey"
+            :src="previewUrl"
+            class="preview-iframe"
+            @load="handleIframeLoad"
+          ></iframe>
         </div>
         <div v-else class="preview-empty">
           <p>等待生成网站内容...</p>
@@ -491,6 +497,26 @@ const streamGenCode = async (message: string) => {
         console.log('收到 done 事件，流式生成完成，总长度:', aiMessageObj.content.length)
         eventSource.close()
         resolve()
+      })
+
+      // 处理business-error事件（后端限流等错误）
+      eventSource.addEventListener('business-error', (event) => {
+        try {
+          const errorData = JSON.parse(event.data)
+          console.error('SSE 业务错误事件:', errorData)
+
+          // 显示具体的错误信息
+          const errorMessage = errorData.message || '生成过程中出现错误'
+          aiMessageObj.content = `❌ ${errorMessage}`
+          antMessage.error(errorMessage)
+
+          eventSource.close()
+          reject(new Error(errorMessage))
+        } catch (parseError) {
+          console.error('解析错误事件失败:', parseError, '原始数据:', event.data)
+          eventSource.close()
+          reject(new Error('服务器返回错误'))
+        }
       })
 
       // 监听错误事件
