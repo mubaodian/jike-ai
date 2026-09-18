@@ -38,6 +38,7 @@ langchain4j:
       base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-v4-flash
+      max-retries: 3
       custom-parameters:
         thinking:
           type: "disabled"
@@ -50,6 +51,7 @@ langchain4j:
       base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-v4-flash
+      max-retries: 3
       custom-parameters:
         thinking:
           type: "disabled"

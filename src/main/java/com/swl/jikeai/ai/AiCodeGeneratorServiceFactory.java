@@ -96,6 +96,7 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
                     .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加输入护轨
+//                    .outputGuardrails(new RetryOutputGuardrail()) //添加输出护轨（会影响AI流式输出，所以注释掉）
                     .build();
             // Vue 项目生成使用推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
@@ -103,7 +104,9 @@ public class AiCodeGeneratorServiceFactory {
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(toolExecutionRequest, "Error: there is no tool called: " + toolExecutionRequest.name()))
+                    .maxToolCallingRoundTrips(20)
                     .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加输入护轨
+//                    .outputGuardrails(new RetryOutputGuardrail()) //添加输出护轨
                     .build();
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型：" + codeGenType.getValue());
         };
