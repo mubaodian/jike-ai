@@ -3,50 +3,48 @@ package com.swl.jikeai.ai;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- *  AI 代码生成类型路由服务工厂
+ *  App 名称生成服务工厂类
  */
 @Slf4j
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.qwen-chat-model")
-@Data
-public class AiCodeGenTypeRoutingServiceFactory {
+public class AiCodeGenAppNameServiceFactory {
 
+    @Value("${langchain4j.open-ai.qwen-chat-model.base-url}")
     private String baseUrl;
 
+    @Value("${langchain4j.open-ai.qwen-chat-model.api-key}")
     private String apiKey;
 
+    @Value("${langchain4j.open-ai.qwen-chat-model.model-name}")
     private String modelName;
 
     /**
-     *  创建专用于路由的 ChatModel（不开启 json_object 模式）
+     *  创建专门生成 app name 的chatModel
      */
-    private ChatModel routingChatModel() {
+    private ChatModel appNameChatModel() {
         return OpenAiChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
                 .modelName(modelName)
-                .strictJsonSchema(true)
                 .logRequests(true)
                 .logResponses(true)
                 .build();
     }
 
     /**
-     *  创建 AI 代码生成类型路由服务实例
+     *  创建App Name 生成服务实例
      * @return Ai Service 实例对象
      */
     @Bean
-    public AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService() {
-        return AiServices.builder(AiCodeGenTypeRoutingService.class)
-                .chatModel(routingChatModel())
+    public AiCodeGenAppNameService aiCodeGenAppNameService() {
+        return AiServices.builder(AiCodeGenAppNameService.class)
+                .chatModel(appNameChatModel())
                 .build();
     }
 }

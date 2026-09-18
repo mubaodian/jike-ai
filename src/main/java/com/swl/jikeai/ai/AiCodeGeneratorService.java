@@ -43,11 +43,4 @@ public interface AiCodeGeneratorService {
     @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt.txt")
     TokenStream generateVueProjectCodeStream(@MemoryId Long appID, @UserMessage String userMessage);
 
-    /**
-     * AI自动生成应用名称
-     * @param userMessage 用户消息
-     * @return app名称
-     */
-    @SystemMessage(fromResource = "prompt/gen-appname-system-prompt.txt")
-    String genAppName(String userMessage);
 }

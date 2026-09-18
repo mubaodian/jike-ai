@@ -58,6 +58,12 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-tokens: 8192
+    qwen-chat-model:
+      base-url: https://ws-zsdsz1yt0pe944af.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+      api-key: ${DASHSCOPE_API_KEY}
+      model-name: qwen-plus
+      max-tokens: 200
+
 # 阿里云 DashScope 配置
 dashscope:
   api-key: ${DASHSCOPE_API_KEY}

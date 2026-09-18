@@ -5,12 +5,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.swl.jikeai.ai.AiCodeGenAppNameService;
 import com.swl.jikeai.ai.AiCodeGenTypeRoutingService;
-import com.swl.jikeai.ai.AiCodeGeneratorService;
-import com.swl.jikeai.ai.tools.FileWriteTool;
 import com.swl.jikeai.core.AiCodeGeneratorFacade;
 import com.swl.jikeai.core.builder.VueProjectBuilder;
 import com.swl.jikeai.core.handler.StreamHandlerExecutor;
@@ -29,7 +27,6 @@ import com.swl.jikeai.service.AppService;
 import com.swl.jikeai.service.ChatHistoryService;
 import com.swl.jikeai.service.ScreenshotService;
 import com.swl.jikeai.service.UserService;
-import com.swl.jikeai.utils.ResultUtils;
 import com.swl.jikeai.utils.ThrowUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +57,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private UserService userService;
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGenAppNameService aiCodeGenAppNameService;
     @Resource
     private ChatHistoryService chatHistoryService;
     @Resource
@@ -100,7 +97,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
-    public Long createApp(AppAddRequest appAddRequest, User loginUser){
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
         // 校验参数
         String initPrompt = appAddRequest.getInitPrompt();
         ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt不能为空");
@@ -109,7 +106,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         BeanUtils.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
         // 设置app名称
-        app.setAppName(this.getAppName(initPrompt));
+        String appName = this.getAppName(initPrompt);
+        log.info("app应用名称为：{}", appName);
+        app.setAppName(appName);
         // 使用 AI 智能选择代码生成类型
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
         log.info("智能选择代码生成类型：{}", selectedCodeGenType);
@@ -174,14 +173,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 构建应用访问 Url
         String deployUrl = StrUtil.format("{}/{}", CODE_DEPLOY_HOST, deployKey);
         // 异步生成截图并更新应用封面
-        generateAppScreenshotAsync(appId,deployUrl);
+        generateAppScreenshotAsync(appId, deployUrl);
         return deployUrl;
     }
 
     @Override
-    public void generateAppScreenshotAsync(Long appId, String appUrl){
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
         // 使用虚拟线程异步执行
-        Thread.startVirtualThread(() ->{
+        Thread.startVirtualThread(() -> {
             // 使用截图服务生成截图并上传
             String cosUrl = screenshotService.generateAndUploadScreenshot(appUrl);
             // 更新应用封面
@@ -263,8 +262,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Override
     public String getAppName(String userMessage) {
         try {
-            String appNameJson = aiCodeGeneratorService.genAppName(userMessage);
-            return JSONUtil.parseObj(appNameJson).getStr("name");
+            return aiCodeGenAppNameService.genAppName(userMessage);
         } catch (Exception e) {
             log.error("生成应用名称失败:{}", e.getMessage());
             return userMessage.substring(0, Math.min(userMessage.length(), 12));
