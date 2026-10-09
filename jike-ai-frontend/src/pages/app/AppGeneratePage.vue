@@ -632,11 +632,37 @@ const handleDeploy = async () => {
 
 // 复制部署URL
 const handleCopyUrl = async () => {
+  // navigator.clipboard 仅在安全上下文（HTTPS 或 localhost）下可用，
+  // 通过 http + IP 访问时为 undefined，需要降级到 execCommand
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(deployUrl.value)
+      antMessage.success('已复制到剪贴板')
+      return
+    } catch {
+      // 失败则走下面的降级方案
+    }
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = deployUrl.value
+  textarea.style.position = 'fixed'
+  textarea.style.top = '-9999px'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
   try {
-    await navigator.clipboard.writeText(deployUrl.value)
-    antMessage.success('已复制到剪贴板')
-  } catch (error) {
-    antMessage.error(`复制失败:${error}，请手动复制`)
+    const ok = document.execCommand('copy')
+    if (ok) {
+      antMessage.success('已复制到剪贴板')
+    } else {
+      antMessage.error('复制失败，请手动复制')
+    }
+  } catch {
+    antMessage.error('复制失败，请手动复制')
+  } finally {
+    document.body.removeChild(textarea)
   }
 }
 
