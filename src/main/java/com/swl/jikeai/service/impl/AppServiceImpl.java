@@ -31,6 +31,7 @@ import com.swl.jikeai.utils.ThrowUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -53,6 +54,9 @@ import static com.swl.jikeai.constant.AppConstant.*;
 @Slf4j
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
+
+    @Value("${code.deploy-host:http://localhost}")
+    private String deployHost;
 
     @Resource
     private UserService userService;
@@ -171,7 +175,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         boolean result = this.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用部署失败");
         // 构建应用访问 Url
-        String deployUrl = StrUtil.format("{}/{}", CODE_DEPLOY_HOST, deployKey);
+        String deployUrl = StrUtil.format("{}/{}", deployHost, deployKey);
         // 异步生成截图并更新应用封面
         generateAppScreenshotAsync(appId, deployUrl);
         return deployUrl;

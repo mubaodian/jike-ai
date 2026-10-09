@@ -1,6 +1,6 @@
 spring:
   application:
-    name: jike-aix
+    name: jike-ai
   config:
     import: optional:file:.env[.properties]
   # mysql
