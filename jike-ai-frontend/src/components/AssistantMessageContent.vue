@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed } from 'vue'
+import { reactive, computed, ref, watch, onUnmounted } from 'vue'
 import { renderMarkdown } from '@/utils/markdown'
 
 interface Props {
@@ -27,6 +27,43 @@ interface Segment {
 }
 
 const props = defineProps<Props>()
+
+// 流式期间内容节流：最多每 THROTTLE_MS 毫秒重渲染一次。
+// 否则每收到一个 SSE 分片都会对整段累积内容重跑 marked + highlight.js，
+// 内容越长越慢（O(n²)），会卡死主线程导致页面无法滚动。
+const THROTTLE_MS = 120
+const renderedContent = ref(props.content)
+let lastRenderTs = 0
+let pendingTimer: ReturnType<typeof setTimeout> | null = null
+
+const flush = () => {
+  pendingTimer = null
+  lastRenderTs = Date.now()
+  renderedContent.value = props.content
+}
+
+watch(
+  () => props.content,
+  () => {
+    const elapsed = Date.now() - lastRenderTs
+    if (elapsed >= THROTTLE_MS) {
+      if (pendingTimer !== null) {
+        clearTimeout(pendingTimer)
+        pendingTimer = null
+      }
+      flush()
+    } else if (pendingTimer === null) {
+      // 保证最后一次变更也会被渲染（尾随渲染）
+      pendingTimer = setTimeout(flush, THROTTLE_MS - elapsed)
+    }
+  },
+)
+
+onUnmounted(() => {
+  if (pendingTimer !== null) {
+    clearTimeout(pendingTimer)
+  }
+})
 
 // 记录哪些思考块是展开的
 const openSet = reactive(new Set<number>())
@@ -41,15 +78,16 @@ const toggleThinking = (idx: number) => {
 
 // 将内容分割为多个段（思考块 + 普通文本交替）
 const segments = computed<Segment[]>(() => {
+  const content = renderedContent.value
   const result: Segment[] = []
   const regex = /\[thinking\]([\s\S]*?)\[\/thinking\]/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
-  while ((match = regex.exec(props.content)) !== null) {
+  while ((match = regex.exec(content)) !== null) {
     // 匹配前的普通文本
     if (match.index > lastIndex) {
-      result.push({ type: 'text', content: props.content.slice(lastIndex, match.index) })
+      result.push({ type: 'text', content: content.slice(lastIndex, match.index) })
     }
     // 思考块
     result.push({ type: 'thinking', content: match[1] || '' })
@@ -57,8 +95,8 @@ const segments = computed<Segment[]>(() => {
   }
 
   // 剩余的普通文本
-  if (lastIndex < props.content.length) {
-    result.push({ type: 'text', content: props.content.slice(lastIndex) })
+  if (lastIndex < content.length) {
+    result.push({ type: 'text', content: content.slice(lastIndex) })
   }
 
   return result

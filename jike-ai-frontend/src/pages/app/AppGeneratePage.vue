@@ -283,6 +283,21 @@ const handleIframeLoad = () => {
 // 消息容器引用（用于自动滚动）
 const messagesContainerRef = ref<HTMLElement | null>(null)
 
+// 滚动到底部（rAF 节流：一帧内多次调用只执行一次，避免流式输出时频繁强制布局）
+let scrollRafId: number | null = null
+const scheduleScrollToBottom = () => {
+  if (scrollRafId !== null) {
+    return
+  }
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = null
+    const el = messagesContainerRef.value
+    if (el) {
+      el.scrollTop = el.scrollHeight
+    }
+  })
+}
+
 // 对话历史相关状态
 const historyLoading = ref(false)
 const hasMore = ref(false)
@@ -477,14 +492,9 @@ const streamGenCode = async (message: string) => {
               const content = parsed.d
               // 所有内容都累加到 AI 消息中（包括思考内容）
               aiMessageObj.content += content
-              console.log('解析数据块:', content.substring(0, 100))
 
-              // 自动滚动到最新消息
-              if (messagesContainerRef.value) {
-                setTimeout(() => {
-                  messagesContainerRef.value!.scrollTop = messagesContainerRef.value!.scrollHeight
-                }, 0)
-              }
+              // 自动滚动到最新消息（rAF 节流，避免每个分片都强制同步布局）
+              scheduleScrollToBottom()
             }
           }
         } catch (error) {

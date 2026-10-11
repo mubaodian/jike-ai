@@ -8,22 +8,46 @@ marked.setOptions({
   pedantic: false,
 })
 
+// 语言别名：highlight.js 未注册的语言名映射到已注册的近亲，
+// 避免回退到 highlightAuto（它会遍历全部 ~190 种语言，流式渲染下极其昂贵）
+const LANGUAGE_ALIASES: Record<string, string> = {
+  vue: 'xml',
+  tsx: 'typescript',
+  jsx: 'javascript',
+}
+
+// 解析出 highlight.js 实际支持的语言，不支持则返回 undefined
+const resolveLanguage = (lang?: string): string | undefined => {
+  if (!lang) {
+    return undefined
+  }
+  // 只取 info string 的第一个词，例如 "html title=xxx" -> "html"
+  const name = lang.trim().split(/\s+/)[0]?.toLowerCase()
+  if (!name) {
+    return undefined
+  }
+  const aliased = LANGUAGE_ALIASES[name] || name
+  return hljs.getLanguage(aliased) ? aliased : undefined
+}
+
 // 自定义代码块渲染器
 marked.use({
   renderer: {
     code({ text, lang }: { text: string; lang?: string }) {
-      const language = lang || 'plaintext'
-      let highlighted = text
+      const language = lang?.trim().split(/\s+/)[0] || 'plaintext'
+      const resolved = resolveLanguage(lang)
+      let highlighted: string
 
-      // 尝试使用 highlight.js 进行语法高亮
-      try {
-        if (hljs.getLanguage(language)) {
-          highlighted = hljs.highlight(text, { language }).value
-        } else {
-          highlighted = hljs.highlightAuto(text).value
+      if (resolved) {
+        // 尝试使用 highlight.js 进行语法高亮
+        try {
+          highlighted = hljs.highlight(text, { language: resolved }).value
+        } catch (error) {
+          console.error('代码高亮失败:', error)
+          highlighted = escapeHtml(text)
         }
-      } catch (error) {
-        console.error('代码高亮失败:', error)
+      } else {
+        // 未注册的语言不回退到 highlightAuto，直接按纯文本转义
         highlighted = escapeHtml(text)
       }
 
