@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -62,11 +63,21 @@ public class AppController {
      * @param appId   应用id
      * @param message 用户消息提示
      * @param request 请求
+     * @param response 响应（用于设置 SSE 相关的响应头）
      * @return 生成的代码流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RateLimit(limitType = RateLimitType.USER, rate = 5,rateInterval = 60,message = "AI 对话请求过于频繁，请稍后再试")
-    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId, @RequestParam String message, HttpServletRequest request) {
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId, @RequestParam String message,
+                                                       HttpServletRequest request, HttpServletResponse response) {
+        // 关键：告诉反向代理（Nginx / OpenResty）不要缓冲这个响应。
+        // 代理默认会开启响应缓冲（proxy_buffering on），SSE 每个分片只有几十~几百字节，
+        // 会被攒在代理缓冲区里，直到整个流结束才一次性下发给浏览器，
+        // 前端表现就是"没有打字机效果，等 AI 全部输出完才一起显示"。
+        // 该响应头是 Nginx 官方支持的关闭缓冲的方式，配合服务器上的 proxy_buffering off 使用。
+        response.setHeader("X-Accel-Buffering", "no");
+        // SSE 响应不能被缓存
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用Id无效");
         ThrowUtils.throwIf(StrUtil.isBlankIfStr(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");

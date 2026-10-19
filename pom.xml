@@ -76,6 +76,21 @@
             <artifactId>langchain4j-open-ai-spring-boot4-starter</artifactId>
             <version>1.15.0-beta25</version>
         </dependency>
+        <!--
+            langchain4j 官方 JDK HTTP 客户端。
+            项目里 selenium 的 webdrivermanager 会引入 Apache HttpClient 5，
+            导致 SpringBoot 自动探测 HTTP 请求工厂时选中 Apache 实现；
+            而 langchain4j 的 SpringRestClient 用该工厂读取 SSE 时会整段缓冲响应，
+            使流式输出要等模型生成完才一次性到达前端（没有打字机效果）。
+            引入本模块后，代码里手动 new OpenAiXxxModel.builder() 构建的模型
+            由 JikeAiApplication 里的系统属性选中 JDK 实现；
+            spring-boot4 starter 自动装配的模型则通过 AiStreamingHttpClientConfig 覆盖其 HTTP 客户端。
+        -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-http-client-jdk</artifactId>
+            <version>1.15.0</version>
+        </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-reactor</artifactId>
